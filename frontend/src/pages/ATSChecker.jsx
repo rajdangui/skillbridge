@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { atsAPI, opportunityAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import SearchableSelect from '../components/SearchableSelect';
 
 function ScoreArc({ score }) {
   const size = 160;
@@ -173,16 +174,15 @@ export default function ATSChecker() {
           {/* Target role selector */}
           <div className="card">
             <p className="label" style={{ marginBottom: 'var(--space-4)' }}>Target Role <span style={{ color: 'var(--text-tertiary)', textTransform: 'none', fontSize: 11 }}>(optional — improves keyword matching)</span></p>
-            <select
+            <SearchableSelect
+              options={opps.map(o => ({ value: o._id, label: `${o.title} — ${o.company}` }))}
               value={opportunityId}
-              onChange={e => setOpportunityId(e.target.value)}
-              className="input"
-              style={{ fontFamily: "'Geist'" }}>
-              <option value="">General ATS check (no target role)</option>
-              {opps.map(o => <option key={o._id} value={o._id}>{o.title} — {o.company}</option>)}
-            </select>
+              onChange={setOpportunityId}
+              placeholder="Search target role..."
+              emptyLabel="General ATS check (no target role)"
+            />
             {!opportunityId && (
-              <p style={{ fontFamily: "'Geist'", fontSize: 12, color: 'var(--text-tertiary)', marginTop: 6 }}>
+              <p style={{ fontFamily: "'Geist'", fontSize: 12, color: 'var(--text-tertiary)', marginTop: 10 }}>
                 Without a target role, we skip keyword matching and focus on formatting.
               </p>
             )}

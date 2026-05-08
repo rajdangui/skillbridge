@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const ROLES = ['Frontend Developer','ML Engineer','Data Scientist','Backend Engineer','DevOps Intern','Product Designer'];
 const COMPANIES = ['Google','Microsoft','Razorpay','Flipkart','Swiggy','Zerodha','CRED','Meesho','PhonePe','Groww','Ola','Zomato'];
@@ -30,6 +30,16 @@ function Typewriter() {
 }
 
 export default function Landing() {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/opportunities?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   return (
     <div style={{ background:'var(--bg-base)' }}>
       <style>{`@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}`}</style>
@@ -57,6 +67,51 @@ export default function Landing() {
               <p style={{ fontFamily:"'Geist'", fontSize:15.5, color:'var(--text-secondary)', lineHeight:1.65, maxWidth:480, marginBottom:36 }}>
                 SkillBridge connects ambitious students with top opportunities. AI-powered applications, skill gap analysis, and a learning hub — all free.
               </p>
+              {/* Landing Hero Search Bar */}
+              <form onSubmit={handleSearchSubmit} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '6px 6px 6px 14px',
+                maxWidth: 480,
+                marginBottom: 24,
+                boxShadow: '0 4px 20px -2px rgba(0,0,0,0.15)',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+              }}
+              onFocusCapture={e => {
+                e.currentTarget.style.borderColor = 'var(--accent-border)';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15), 0 4px 20px -2px rgba(0,0,0,0.15)';
+              }}
+              onBlurCapture={e => {
+                e.currentTarget.style.borderColor = 'var(--border-default)';
+                e.currentTarget.style.boxShadow = '0 4px 20px -2px rgba(0,0,0,0.15)';
+              }}
+              >
+                <div style={{ color: 'var(--text-tertiary)', fontSize: 16, display: 'flex', alignItems: 'center' }}>🔍</div>
+                <input
+                  type="text"
+                  placeholder="Search for roles, skills, companies..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    outline: 'none',
+                    color: 'var(--text-primary)',
+                    fontFamily: "'Geist'",
+                    fontSize: 14,
+                    flex: 1,
+                    padding: '8px 4px',
+                  }}
+                />
+                <button type="submit" className="btn btn-primary" style={{ height: 38, padding: '0 16px', fontSize: 13, fontWeight: 600, border: 'none' }}>
+                  Search
+                </button>
+              </form>
+
               <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
                 <Link to="/register" className="btn btn-primary btn-lg">Get started free →</Link>
                 <Link to="/opportunities" className="btn btn-secondary btn-lg">Browse roles</Link>
