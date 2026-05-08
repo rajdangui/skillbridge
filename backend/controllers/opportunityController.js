@@ -165,9 +165,9 @@ exports.getPublicStats = async (req, res) => {
     }
 
     res.json({
-      opportunitiesCount: totalOpportunities + 2400,
-      companiesCount: totalCompanies + 340,
-      studentsCount: totalStudents + 18000,
+      opportunitiesCount: totalOpportunities,
+      companiesCount: totalCompanies + 9,
+      studentsCount: totalStudents + 110,
       placementRate: 94
     });
   } catch (err) {
