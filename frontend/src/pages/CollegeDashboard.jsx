@@ -156,63 +156,66 @@ function MarksheetUploader({ onParsed, onClose }) {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [semLabel, setSemLabel] = useState('');
   const fileRef = useRef();
 
-  const handleUpload = async () => {
-    if (!file) { setError('Please select a PDF marksheet'); return; }
-    if (!semLabel.trim()) { setError('Please enter a semester name/number'); return; }
+  const handleUpload = async (selectedFile) => {
+    const f = selectedFile || file;
+    if (!f) { setError('Please select a PDF marksheet'); return; }
     
     setLoading(true); setError('');
     try {
       const fd = new FormData();
-      fd.append('marksheet', file);
-      const uploadRes = await academicAPI.parseMarksheet(fd);
-      
-      const applyRes = await academicAPI.applyParsedData({
-        semesterLabel: semLabel.trim(),
-        marksheetUrl: uploadRes.data.marksheetUrl
-      });
-      
-      onParsed(applyRes.data.profile);
+      fd.append('marksheet', f);
+      const res = await academicAPI.parseMarksheet(fd);
+      onParsed(res.data.profile);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || 'Upload failed. Try again.');
+      setError(err.response?.data?.message || 'AI Parsing failed. Please ensure the PDF is valid.');
     } finally { setLoading(false); }
+  };
+
+  const handleFileChange = (e) => {
+    const f = e.target.files[0];
+    if (f) {
+      if (f.type !== 'application/pdf') {
+        setError('PDF files only');
+        return;
+      }
+      setFile(f);
+      setError('');
+      handleUpload(f);
+    }
   };
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-4)' }}>
       <div
-        onClick={() => fileRef.current?.click()}
-        style={{ border:`2px dashed ${file ? 'var(--accent)' : 'var(--border-default)'}`, borderRadius:'var(--radius-lg)', padding:'var(--space-8)', textAlign:'center', cursor:'pointer', background: file ? 'var(--accent-muted)' : 'var(--bg-elevated)', transition:'all var(--t-base)' }}
-        onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor='var(--accent)'; }}
+        onClick={() => !loading && fileRef.current?.click()}
+        style={{ border:`2px dashed ${file ? 'var(--accent)' : 'var(--border-default)'}`, borderRadius:'var(--radius-lg)', padding:'var(--space-8)', textAlign:'center', cursor: loading ? 'not-allowed' : 'pointer', background: file ? 'var(--accent-muted)' : 'var(--bg-elevated)', transition:'all var(--t-base)', opacity: loading ? 0.7 : 1 }}
+        onDragOver={e => { e.preventDefault(); if(!loading) e.currentTarget.style.borderColor='var(--accent)'; }}
         onDragLeave={e => { e.currentTarget.style.borderColor='var(--border-default)'; }}
-        onDrop={e => { e.preventDefault(); const f=e.dataTransfer.files[0]; if(f?.type==='application/pdf'){setFile(f);setError('');} else setError('PDF files only'); e.currentTarget.style.borderColor='var(--border-default)'; }}>
-        <input ref={fileRef} type="file" accept=".pdf" onChange={e => { setFile(e.target.files[0]); setError(''); }} style={{ display:'none' }}/>
-        <div style={{ fontSize:32, marginBottom:'var(--space-3)' }}>{file ? '📄' : '☁️'}</div>
+        onDrop={e => { e.preventDefault(); if(loading) return; const f=e.dataTransfer.files[0]; if(f?.type==='application/pdf'){setFile(f);setError(''); handleUpload(f);} else setError('PDF files only'); e.currentTarget.style.borderColor='var(--border-default)'; }}>
+        <input ref={fileRef} type="file" accept=".pdf" onChange={handleFileChange} style={{ display:'none' }} disabled={loading}/>
+        <div style={{ fontSize:32, marginBottom:'var(--space-3)' }}>{loading ? '⚡' : file ? '📄' : '☁️'}</div>
         <p style={{ fontFamily:"'Geist'", fontWeight:600, fontSize:14, color: file ? 'var(--text-accent)' : 'var(--text-primary)', marginBottom:4 }}>
-          {file ? file.name : 'Drop your marksheet PDF here'}
+          {loading ? 'AI is extracting academic records...' : file ? file.name : 'Drop your marksheet PDF here'}
         </p>
-        <p style={{ fontFamily:"'Geist'", fontSize:12, color:'var(--text-tertiary)' }}>
-          {file ? `${(file.size/1024).toFixed(0)} KB — click to change` : 'or click to browse · PDF only · max 10MB'}
+        <p style={{ fontFamily:"'Geist'", fontSize:12, color:'var(--text-tertiary)', padding:'0 15px' }}>
+          {loading ? 'Applying Mistral OCR to identify Semester, SGPA and Subject grades...' : file ? `${(file.size/1024).toFixed(0)} KB` : 'or click to browse · PDF only · Mistral AI auto-parses sem/grades'}
         </p>
-      </div>
-      
-      <div>
-        <label style={{ display:'block', fontFamily:"'Geist'", fontSize:13, fontWeight:500, color:'var(--text-primary)', marginBottom:6 }}>Semester Name / Number</label>
-        <input type="text" className="input" placeholder="e.g. Semester 3 or Fall 2023" value={semLabel} onChange={e=>setSemLabel(e.target.value)} style={{ width:'100%' }} />
       </div>
 
       <div style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-subtle)', borderRadius:'var(--radius-md)', padding:'10px 14px', fontFamily:"'Geist'", fontSize:12, color:'var(--text-secondary)', lineHeight:1.6 }}>
-        💡 Your PDF will be securely stored and displayed directly in your dashboard.
+        ✨ <strong>No manual input needed!</strong> Mistral OCR will automatically scan the text, detect your semester, extract your SGPA, and auto-populate all subjects into your dashboard.
       </div>
       
       {error && <div style={{ padding:'10px 14px', background:'var(--red-muted)', border:'1px solid rgba(248,113,113,.2)', borderRadius:'var(--radius-md)', fontFamily:"'Geist'", fontSize:13, color:'var(--red)' }}>{error}</div>}
       
-      <button onClick={handleUpload} disabled={!file || !semLabel.trim() || loading} className="btn btn-primary" style={{ justifyContent:'center', padding:11 }}>
-        {loading ? <><span style={{ width:15, height:15, borderRadius:'50%', border:'2px solid rgba(255,255,255,.3)', borderTopColor:'#fff', animation:'spin .7s linear infinite', display:'inline-block' }}/> Uploading...</> : '📄 Upload Marksheet'}
-      </button>
+      {!loading && file && (
+        <button onClick={() => handleUpload()} className="btn btn-primary" style={{ justifyContent:'center', padding:11 }}>
+          📄 Retry Parsing Marksheet
+        </button>
+      )}
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
@@ -236,6 +239,7 @@ export default function CollegeDashboard() {
   const [modal, setModal] = useState(null); // 'marksheet' | 'addAssignment' | 'addExam' | 'addTimetableSlot' | 'editMeta'
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
+  const [expandedPdfs, setExpandedPdfs] = useState({});
 
   // Forms
   const [assignForm, setAssignForm] = useState({ title:'', subject:'', dueDate:'', priority:'medium', maxMarks:100, notes:'' });
@@ -252,6 +256,7 @@ export default function CollegeDashboard() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2800); };
   const refresh = (p) => { setProfile(p); showToast('Saved!'); setModal(null); };
+  const togglePdf = (num) => { setExpandedPdfs(prev => ({ ...prev, [num]: !prev[num] })); };
 
   const handleAddAssignment = async (e) => {
     e.preventDefault(); setSaving(true);
@@ -498,75 +503,146 @@ export default function CollegeDashboard() {
 
           {profile?.semesters?.length > 0 ? (
             <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-5)' }}>
-              {[...profile.semesters].sort((a,b) => b.number - a.number).map(sem => (
-                <div key={sem._id || sem.number} className="card" style={{ overflow:'hidden' }}>
-                  {/* Header */}
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'var(--space-4)', paddingBottom:'var(--space-3)', borderBottom:'1px solid var(--border-subtle)' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:'var(--space-3)' }}>
-                      <span style={{ fontSize:20 }}>📄</span>
-                      <h3 style={{ fontFamily:"'Geist'", fontWeight:700, fontSize:15, color:'var(--text-primary)' }}>{sem.label || `Semester ${sem.number}`}</h3>
+              {[...profile.semesters].sort((a,b) => b.number - a.number).map(sem => {
+                const isExpanded = !!expandedPdfs[sem.number];
+                const sgpaColor = sem.sgpa >= 9.0 ? 'var(--emerald)' : sem.sgpa >= 8.0 ? 'var(--text-accent)' : sem.sgpa >= 7.0 ? 'var(--amber)' : 'var(--red)';
+                const sgpaBg = sem.sgpa >= 9.0 ? 'var(--emerald-muted)' : sem.sgpa >= 8.0 ? 'var(--accent-muted)' : sem.sgpa >= 7.0 ? 'var(--amber-muted)' : 'var(--red-muted)';
+                const sgpaBorder = sem.sgpa >= 9.0 ? 'rgba(16,185,129,0.2)' : sem.sgpa >= 8.0 ? 'var(--accent-border)' : sem.sgpa >= 7.0 ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)';
+
+                return (
+                  <div key={sem._id || sem.number} className="card" style={{ overflow:'hidden', padding:'var(--space-5)' }}>
+                    {/* Header */}
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'var(--space-4)', paddingBottom:'var(--space-3)', borderBottom:'1px solid var(--border-subtle)' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'var(--space-3)' }}>
+                        <span style={{ fontSize:20 }}>📖</span>
+                        <div>
+                          <h3 style={{ fontFamily:"'Geist'", fontWeight:700, fontSize:15, color:'var(--text-primary)', marginBottom:2 }}>{sem.label || `Semester ${sem.number}`}</h3>
+                          <p style={{ fontFamily:"'Geist'", fontSize:11, color:'var(--text-tertiary)' }}>Auto-extracted via Mistral AI</p>
+                        </div>
+                      </div>
+                      
+                      <div style={{ display:'flex', alignItems:'center', gap:'var(--space-3)' }}>
+                        {/* SGPA Badge */}
+                        <div style={{
+                          fontFamily:"'Geist'",
+                          fontWeight:700,
+                          fontSize:13,
+                          color: sgpaColor,
+                          background: sgpaBg,
+                          border: `1px solid ${sgpaBorder}`,
+                          padding: '4px 10px',
+                          borderRadius: '20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}>
+                          <span>SGPA:</span>
+                          <span style={{ fontSize:14 }}>{sem.sgpa != null ? sem.sgpa.toFixed(2) : '—'}</span>
+                        </div>
+
+                        {sem.marksheetUrl && (
+                          <button
+                            onClick={() => togglePdf(sem.number)}
+                            style={{ fontFamily:"'Geist'", fontSize:12, fontWeight:500, cursor:'pointer', color: isExpanded ? 'var(--text-primary)' : 'var(--text-accent)', background: isExpanded ? 'var(--bg-elevated)' : 'var(--accent-muted)', border: `1px solid ${isExpanded ? 'var(--border-default)' : 'var(--accent-border)'}`, padding:'4px 10px', borderRadius:'var(--radius-sm)', transition:'all var(--t-fast)' }}
+                          >
+                            {isExpanded ? '🙈 Hide PDF' : '📄 View PDF'}
+                          </button>
+                        )}
+
+                        <button onClick={async () => {
+                          if (!confirm(`Delete "${sem.label || 'Semester ' + sem.number}" marksheet?`)) return;
+                          try {
+                            await academicAPI.deleteSemester(sem.number);
+                            setProfile(prev => ({ ...prev, semesters: prev.semesters.filter(s => s.number !== sem.number) }));
+                          } catch (err) { console.error('Delete failed:', err); }
+                        }}
+                          style={{ background:'none', border:'1px solid rgba(248,113,113,.2)', borderRadius:'var(--radius-sm)', cursor:'pointer', color:'var(--red)', fontSize:12, padding:'4px 10px', fontFamily:"'Geist'", transition:'all var(--t-fast)' }}
+                          onMouseEnter={e => { e.currentTarget.style.background='var(--red-muted)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background='none'; }}>
+                          🗑 Remove
+                        </button>
+                      </div>
                     </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:'var(--space-3)' }}>
-                      {sem.marksheetUrl && (
-                        <a href={sem.marksheetUrl} target="_blank" rel="noopener noreferrer"
-                          style={{ fontFamily:"'Geist'", fontSize:12, color:'var(--text-accent)', textDecoration:'none', padding:'4px 10px', borderRadius:'var(--radius-sm)', border:'1px solid var(--accent-border)', background:'var(--accent-muted)', transition:'all var(--t-fast)' }}
-                          onMouseEnter={e => e.currentTarget.style.background='var(--accent)'}
-                          onMouseLeave={e => { e.currentTarget.style.background='var(--accent-muted)'; e.currentTarget.style.color='var(--text-accent)'; }}>
-                          ↗ Open PDF
-                        </a>
-                      )}
-                      <button onClick={async () => {
-                        if (!confirm(`Delete "${sem.label || 'Semester ' + sem.number}" marksheet?`)) return;
-                        try {
-                          await academicAPI.deleteSemester(sem.number);
-                          setProfile(prev => ({ ...prev, semesters: prev.semesters.filter(s => s.number !== sem.number) }));
-                        } catch (err) { console.error('Delete failed:', err); }
-                      }}
-                        style={{ background:'none', border:'1px solid rgba(248,113,113,.2)', borderRadius:'var(--radius-sm)', cursor:'pointer', color:'var(--red)', fontSize:12, padding:'4px 10px', fontFamily:"'Geist'", transition:'all var(--t-fast)' }}
-                        onMouseEnter={e => { e.currentTarget.style.background='var(--red-muted)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background='none'; }}>
-                        🗑 Remove
-                      </button>
-                    </div>
-                  </div>
-                  {/* PDF Viewer */}
-                  {sem.marksheetUrl ? (
-                    <div style={{ borderRadius:'var(--radius-lg)', overflow:'hidden', border:'1px solid var(--border-strong)', background:'var(--bg-surface)', boxShadow:'var(--shadow-sm)', marginTop:'var(--space-2)' }}>
-                      {/* Fake window header */}
-                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px', background:'var(--bg-elevated)', borderBottom:'1px solid var(--border-subtle)' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-                          <div style={{ display:'flex', gap:'6px' }}>
-                            <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#FF5F56' }}/>
-                            <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#FFBD2E' }}/>
-                            <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#27C93F' }}/>
+
+                    {/* Extracted Academic Record Table */}
+                    {sem.subjects && sem.subjects.length > 0 ? (
+                      <div style={{ marginBottom:'var(--space-2)', overflowX:'auto', borderRadius:'var(--radius-md)', border:'1px solid var(--border-subtle)' }}>
+                        <table style={{ width:'100%', borderCollapse:'collapse', fontFamily:"'Geist'", fontSize:13, textAlign:'left', color:'var(--text-primary)' }}>
+                          <thead>
+                            <tr style={{ background:'var(--bg-elevated)', borderBottom:'1px solid var(--border-subtle)' }}>
+                              <th style={{ padding:'10px 12px', fontWeight:600, color:'var(--text-secondary)', fontSize:11, letterSpacing:'0.05em', textTransform:'uppercase', width:'15%' }}>Code</th>
+                              <th style={{ padding:'10px 12px', fontWeight:600, color:'var(--text-secondary)', fontSize:11, letterSpacing:'0.05em', textTransform:'uppercase', width:'55%' }}>Subject Name</th>
+                              <th style={{ padding:'10px 12px', fontWeight:600, color:'var(--text-secondary)', fontSize:11, letterSpacing:'0.05em', textTransform:'uppercase', width:'10%', textAlign:'center' }}>Credits</th>
+                              <th style={{ padding:'10px 12px', fontWeight:600, color:'var(--text-secondary)', fontSize:11, letterSpacing:'0.05em', textTransform:'uppercase', width:'10%', textAlign:'center' }}>Grade</th>
+                              <th style={{ padding:'10px 12px', fontWeight:600, color:'var(--text-secondary)', fontSize:11, letterSpacing:'0.05em', textTransform:'uppercase', width:'10%', textAlign:'center' }}>GP</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sem.subjects.map((sub, idx) => (
+                              <tr key={sub._id || idx} style={{ borderBottom:'1px solid var(--border-subtle)', background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'var(--bg-base-transparent)', transition:'all var(--t-fast)' }}>
+                                <td style={{ padding:'10px 12px', fontFamily:'var(--font-mono)', fontSize:12, color:'var(--text-secondary)' }}>{sub.code || '—'}</td>
+                                <td style={{ padding:'10px 12px', fontWeight:500 }}>{sub.name}</td>
+                                <td style={{ padding:'10px 12px', textAlign:'center', fontFamily:'var(--font-mono)' }}>{sub.credits || 3}</td>
+                                <td style={{ padding:'10px 12px', textAlign:'center', fontWeight:700 }}>
+                                  <span style={{
+                                    display:'inline-block',
+                                    padding:'2px 8px',
+                                    borderRadius:12,
+                                    fontSize:11,
+                                    background: ['O','A+','A'].includes(sub.grade) ? 'var(--emerald-muted)' : ['B+','B'].includes(sub.grade) ? 'var(--amber-muted)' : 'rgba(255,255,255,0.05)',
+                                    color: ['O','A+','A'].includes(sub.grade) ? 'var(--emerald)' : ['B+','B'].includes(sub.grade) ? 'var(--amber)' : 'var(--text-secondary)',
+                                    border: `1px solid ${['O','A+','A'].includes(sub.grade) ? 'rgba(16,185,129,0.2)' : ['B+','B'].includes(sub.grade) ? 'rgba(245,158,11,0.2)' : 'var(--border-subtle)'}`
+                                  }}>
+                                    {sub.grade || '—'}
+                                  </span>
+                                </td>
+                                <td style={{ padding:'10px 12px', textAlign:'center', fontFamily:'var(--font-mono)', fontWeight:600, color:'var(--text-secondary)' }}>{sub.gradePoints != null ? sub.gradePoints.toFixed(1) : '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div style={{ textAlign:'center', padding:'var(--space-6)', color:'var(--text-tertiary)', background:'var(--bg-elevated)', borderRadius:'var(--radius-md)', border:'1px dashed var(--border-subtle)', marginBottom:'var(--space-2)' }}>
+                        <p style={{ fontSize:18, marginBottom:4 }}>📊</p>
+                        <p style={{ fontFamily:"'Geist'", fontSize:12.5 }}>No subject breakdown loaded. Re-upload with Mistral AI enabled.</p>
+                      </div>
+                    )}
+
+                    {/* PDF Viewer */}
+                    {sem.marksheetUrl && isExpanded && (
+                      <div style={{ borderRadius:'var(--radius-lg)', overflow:'hidden', border:'1px solid var(--border-strong)', background:'var(--bg-surface)', boxShadow:'var(--shadow-sm)', marginTop:'var(--space-4)' }}>
+                        {/* Fake window header */}
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px', background:'var(--bg-elevated)', borderBottom:'1px solid var(--border-subtle)' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+                            <div style={{ display:'flex', gap:'6px' }}>
+                              <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#FF5F56' }}/>
+                              <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#FFBD2E' }}/>
+                              <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#27C93F' }}/>
+                            </div>
+                            <span style={{ fontFamily:'var(--font-mono)', fontSize:'12px', color:'var(--text-secondary)' }}>
+                              {sem.label ? `${sem.label.replace(/\s+/g, '_').toLowerCase()}_marksheet.pdf` : `sem_${sem.number}_marksheet.pdf`}
+                            </span>
                           </div>
-                          <span style={{ fontFamily:'var(--font-mono)', fontSize:'12px', color:'var(--text-secondary)' }}>
-                            {sem.label ? `${sem.label.replace(/\s+/g, '_').toLowerCase()}_marksheet.pdf` : `sem_${sem.number}_marksheet.pdf`}
-                          </span>
+                          <a href={sem.marksheetUrl} target="_blank" rel="noopener noreferrer" style={{ fontFamily:"'Geist'", fontSize:'12px', color:'var(--text-accent)', textDecoration:'none', fontWeight:500 }}>
+                            Open Original ↗
+                          </a>
                         </div>
-                        <a href={sem.marksheetUrl} target="_blank" rel="noopener noreferrer" style={{ fontFamily:"'Geist'", fontSize:'12px', color:'var(--text-accent)', textDecoration:'none', fontWeight:500 }}>
-                          Open Original ↗
-                        </a>
-                      </div>
-                      {/* Document container */}
-                      <div style={{ padding:'var(--space-6)', background:'var(--bg-base)', display:'flex', justifyContent:'center', overflowX:'auto' }}>
-                        <div style={{ width:'100%', maxWidth:'800px', background:'#fff', borderRadius:'8px', boxShadow:'0 10px 30px rgba(0,0,0,0.1)', overflow:'hidden', border:'1px solid rgba(0,0,0,0.1)' }}>
-                          <iframe
-                            src={`${sem.marksheetUrl}#view=FitH&toolbar=0&navpanes=0`}
-                            title={sem.label || `Semester ${sem.number} Marksheet`}
-                            style={{ width:'100%', height:'700px', border:'none', display:'block', background:'#fff' }}
-                          />
+                        {/* Document container */}
+                        <div style={{ padding:'var(--space-6)', background:'var(--bg-base)', display:'flex', justifyContent:'center', overflowX:'auto' }}>
+                          <div style={{ width:'100%', maxWidth:'800px', background:'#fff', borderRadius:'8px', boxShadow:'0 10px 30px rgba(0,0,0,0.1)', overflow:'hidden', border:'1px solid rgba(0,0,0,0.1)' }}>
+                            <iframe
+                              src={`${sem.marksheetUrl}#view=FitH&toolbar=0&navpanes=0`}
+                              title={sem.label || `Semester ${sem.number} Marksheet`}
+                              style={{ width:'100%', height:'700px', border:'none', display:'block', background:'#fff' }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div style={{ textAlign:'center', padding:'var(--space-8)', color:'var(--text-tertiary)', background:'var(--bg-elevated)', borderRadius:'var(--radius-md)', border:'1px dashed var(--border-subtle)' }}>
-                      <p style={{ fontSize:28, marginBottom:8 }}>📋</p>
-                      <p style={{ fontFamily:"'Geist'", fontSize:13 }}>No PDF attached to this semester</p>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="card" style={{ textAlign:'center', padding:'var(--space-12)', border:'1px dashed var(--border-default)' }}>

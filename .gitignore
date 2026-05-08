@@ -16,7 +16,7 @@ build/
 # Local uploads and temp files
 backend/uploads/*
 !backend/uploads/.gitkeep
-{backend/
+\{backend/
 
 # IDE and OS files
 .DS_Store
