@@ -5,6 +5,8 @@ require('dotenv').config();
 const User = require('./models/User');
 const Opportunity = require('./models/Opportunity');
 const Application = require('./models/Application');
+const AcademicProfile = require('./models/AcademicProfile');
+const Notification = require('./models/Notification');
 
 const companiesData = [
   {
@@ -452,7 +454,9 @@ const seedDB = async () => {
     await User.deleteMany({});
     await Opportunity.deleteMany({});
     await Application.deleteMany({});
-    console.log("Cleared old database tables successfully.");
+    await AcademicProfile.deleteMany({});
+    await Notification.deleteMany({});
+    console.log("Cleared old database tables, notifications, and academic profiles successfully.");
 
     // Hash uniform password
     const hashedPassword = await bcrypt.hash("password123", 10);
