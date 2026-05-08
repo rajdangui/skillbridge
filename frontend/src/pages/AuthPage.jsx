@@ -27,38 +27,53 @@ function Owl({ watching }) {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '24px',
+      padding: '28px',
       borderRadius: 'var(--radius-lg)',
       background: 'rgba(255, 255, 255, 0.03)',
-      backdropFilter: 'blur(12px)',
+      backdropFilter: 'blur(16px)',
       border: '1px solid var(--border-subtle)',
       boxShadow: 'var(--shadow-lg)',
       zIndex: 10,
-      width: 140,
+      width: 170,
       transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
     }}>
       <div style={{ position:'relative' }}>
-        <svg viewBox="0 0 80 80" width="80" height="80">
+        <svg viewBox="0 0 80 80" width="100" height="100">
           <ellipse cx="40" cy="54" rx="21" ry="19" fill="var(--bg-elevated)"/>
           <ellipse cx="40" cy="34" rx="18" ry="16" fill="var(--bg-overlay)"/>
           <polygon points="26,21 22,9 31,17" fill="var(--bg-overlay)"/>
           <polygon points="54,21 58,9 49,17" fill="var(--bg-overlay)"/>
           <ellipse cx="40" cy="57" rx="12" ry="11" fill="#1C2130"/>
           <ellipse cx="40" cy="34" rx="12" ry="11" fill="#1C2130"/>
-          {/* Left */}
+          
+          {/* Left Eye */}
           <ellipse cx="32" cy="33" rx="6" ry="6" fill="var(--bg-base)" stroke="var(--accent)" strokeWidth="1.5"/>
-          <ellipse cx="32" cy="33" rx="3.8" ry="3.8" fill="white" style={{transformOrigin:'32px 33px',transform:watching?'scaleY(1)':'scaleY(0.07)',transition:'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)'}}/>
-          <ellipse cx="32" cy="33" rx="2" ry="2" fill="var(--bg-base)" style={{transformOrigin:'32px 33px',transform:watching?'scaleY(1)':'scaleY(0.07)',transition:'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)'}}/>
-          <circle cx="33" cy="32" r="0.8" fill="white" style={{opacity:watching?1:0,transition:'opacity .2s'}}/>
+          <g style={{
+            transform: watching ? 'translate(2.5px, 0.8px)' : 'none',
+            transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            transformOrigin: '32px 33px'
+          }}>
+            <ellipse cx="32" cy="33" rx="3.8" ry="3.8" fill="white" style={{transformOrigin:'32px 33px',transform:watching?'scaleY(1)':'scaleY(0.07)',transition:'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)'}}/>
+            <ellipse cx="32" cy="33" rx="2" ry="2" fill="var(--bg-base)" style={{transformOrigin:'32px 33px',transform:watching?'scaleY(1)':'scaleY(0.07)',transition:'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)'}}/>
+            <circle cx="33" cy="32" r="0.8" fill="white" style={{opacity:watching?1:0,transition:'opacity .2s'}}/>
+          </g>
           <ellipse cx="32" cy="33" rx="6" ry="3" fill="var(--bg-overlay)" style={{transformOrigin:'32px 33px',transform:watching?'scaleY(0)':'scaleY(1)',transition:'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)'}}/>
           {!watching && <rect x="24" y="30" width="15" height="5" rx="2" fill="var(--bg-elevated)" stroke="var(--border-default)"/>}
-          {/* Right */}
+          
+          {/* Right Eye */}
           <ellipse cx="48" cy="33" rx="6" ry="6" fill="var(--bg-base)" stroke="var(--accent)" strokeWidth="1.5"/>
-          <ellipse cx="48" cy="33" rx="3.8" ry="3.8" fill="white" style={{transformOrigin:'48px 33px',transform:watching?'scaleY(1)':'scaleY(0.07)',transition:'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)'}}/>
-          <ellipse cx="48" cy="33" rx="2" ry="2" fill="var(--bg-base)" style={{transformOrigin:'48px 33px',transform:watching?'scaleY(1)':'scaleY(0.07)',transition:'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)'}}/>
-          <circle cx="49" cy="32" r="0.8" fill="white" style={{opacity:watching?1:0,transition:'opacity .2s'}}/>
+          <g style={{
+            transform: watching ? 'translate(2.5px, 0.8px)' : 'none',
+            transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            transformOrigin: '48px 33px'
+          }}>
+            <ellipse cx="48" cy="33" rx="3.8" ry="3.8" fill="white" style={{transformOrigin:'48px 33px',transform:watching?'scaleY(1)':'scaleY(0.07)',transition:'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)'}}/>
+            <ellipse cx="48" cy="33" rx="2" ry="2" fill="var(--bg-base)" style={{transformOrigin:'48px 33px',transform:watching?'scaleY(1)':'scaleY(0.07)',transition:'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)'}}/>
+            <circle cx="49" cy="32" r="0.8" fill="white" style={{opacity:watching?1:0,transition:'opacity .2s'}}/>
+          </g>
           <ellipse cx="48" cy="33" rx="6" ry="3" fill="var(--bg-overlay)" style={{transformOrigin:'48px 33px',transform:watching?'scaleY(0)':'scaleY(1)',transition:'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)'}}/>
           {!watching && <rect x="41" y="30" width="15" height="5" rx="2" fill="var(--bg-elevated)" stroke="var(--border-default)"/>}
+          
           <polygon points="40,38 37,44 43,44" fill="var(--amber)"/>
           <ellipse cx="20" cy="55" rx="7" ry="12" fill="var(--bg-elevated)" transform="rotate(-8,20,55)"/>
           <ellipse cx="60" cy="55" rx="7" ry="12" fill="var(--bg-elevated)" transform="rotate(8,60,55)"/>
@@ -194,13 +209,27 @@ export default function AuthPage({ mode='login' }) {
             display: none !important;
           }
         }
+        .card-scrollable {
+          max-height: calc(100vh - 160px);
+          overflow-y: auto;
+        }
+        .card-scrollable::-webkit-scrollbar {
+          width: 4px;
+        }
+        .card-scrollable::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .card-scrollable::-webkit-scrollbar-thumb {
+          background: var(--border-subtle);
+          border-radius: 99px;
+        }
       `}</style>
       
       <Owl watching={showPassword} />
 
       <div style={{ width:'100%', maxWidth:400, position:'relative', zIndex:5 }}>
         {/* Header */}
-        <div style={{ textAlign:'center', marginBottom:24 }}>
+        <div style={{ textAlign:'center', marginBottom:20 }}>
           <h1 style={{ fontFamily:"'Geist'", fontWeight:700, fontSize:22, letterSpacing:'-0.03em', color:'var(--text-primary)', marginBottom:6 }}>
             {isLogin?'Welcome back':'Create account'}
           </h1>
@@ -209,7 +238,7 @@ export default function AuthPage({ mode='login' }) {
           </p>
         </div>
 
-        <div className="card" style={{ padding:'var(--space-6)' }}>
+        <div className="card card-scrollable" style={{ padding:'var(--space-6)' }}>
           {/* OAuth */}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:20 }}>
             {[
