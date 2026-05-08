@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { skillGapAPI, opportunityAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import SearchableSelect from '../components/SearchableSelect';
 
 function ScoreRing({ score }) {
   const size=120, r=(size-14)/2, circ=2*Math.PI*r, offset=circ-(score/100)*circ;
@@ -59,14 +58,10 @@ export default function SkillGapAnalyzer() {
         <div className="col-4" style={{ display:'flex', flexDirection:'column', gap:'var(--space-5)' }}>
           <div className="card">
             <p className="label" style={{ marginBottom:'var(--space-4)' }}>Select Opportunity</p>
-            <SearchableSelect
-              options={opps.map(o => ({ value: o._id, label: `${o.title} — ${o.company}` }))}
-              value={selectedOpp}
-              onChange={(val) => { setSelectedOpp(val); setError(''); setResult(null); }}
-              placeholder="Search or select a role..."
-              emptyLabel="Choose a role..."
-              style={{ marginBottom: 'var(--space-4)' }}
-            />
+            <select value={selectedOpp} onChange={e=>{setSelectedOpp(e.target.value);setError('');setResult(null);}} className="input" style={{ fontFamily:"'Geist'", marginBottom:'var(--space-4)' }}>
+              <option value="">Choose a role...</option>
+              {opps.map(o=><option key={o._id} value={o._id}>{o.title} — {o.company}</option>)}
+            </select>
             {user?.skills?.length > 0 && (
               <div>
                 <p className="label" style={{ marginBottom:'var(--space-3)' }}>Your Skills ({user.skills.length})</p>

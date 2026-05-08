@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { coverLetterAPI, opportunityAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import SearchableSelect from '../components/SearchableSelect';
 
 const TONES = [{id:'professional',label:'Professional',emoji:'👔'},{id:'enthusiastic',label:'Enthusiastic',emoji:'🔥'},{id:'concise',label:'Concise',emoji:'⚡'},{id:'creative',label:'Creative',emoji:'🎨'}];
 
@@ -70,13 +69,10 @@ export default function CoverLetterGenerator() {
         <div className="col-4" style={{ display:'flex', flexDirection:'column', gap:'var(--space-5)' }}>
           <div className="card">
             <p className="label" style={{ marginBottom:'var(--space-4)' }}>1 · Select Role</p>
-            <SearchableSelect
-              options={opps.map(o => ({ value: o._id, label: `${o.title} — ${o.company}` }))}
-              value={selectedOpp}
-              onChange={(val) => { setSelectedOpp(val); setError(''); }}
-              placeholder="Search or select a role..."
-              emptyLabel="Choose a role..."
-            />
+            <select value={selectedOpp} onChange={e=>{setSelectedOpp(e.target.value);setError('');}} className="input" style={{ fontFamily:"'Geist'" }}>
+              <option value="">Choose a role...</option>
+              {opps.map(o=><option key={o._id} value={o._id}>{o.title} — {o.company}</option>)}
+            </select>
           </div>
           <div className="card">
             <p className="label" style={{ marginBottom:'var(--space-4)' }}>2 · Tone</p>
