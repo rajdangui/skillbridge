@@ -140,6 +140,7 @@ export default function AuthPage({ mode='login' }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [form, setForm] = useState({ name:'',email:'',password:'',role:'student',college:'',branch:'' });
   const [studentsCount, setStudentsCount] = useState(18000);
+  const [companiesCount, setCompaniesCount] = useState(120);
   const score = strength(form.password);
 
   // Fix: reset showPassword on every mode switch
@@ -156,8 +157,9 @@ export default function AuthPage({ mode='login' }) {
     const fetchStats = async () => {
       try {
         const res = await opportunityAPI.getPublicStats();
-        if (active && res.data && res.data.studentsCount) {
-          setStudentsCount(res.data.studentsCount);
+        if (active && res.data) {
+          if (res.data.studentsCount) setStudentsCount(res.data.studentsCount);
+          if (res.data.companiesCount) setCompaniesCount(res.data.companiesCount);
         }
       } catch (err) {
         // dynamic failover
@@ -261,7 +263,12 @@ export default function AuthPage({ mode='login' }) {
               {isLogin ? 'Welcome back' : 'Create account'}
             </h1>
             <p style={{ fontFamily: "'Geist'", fontSize: 14, color: 'var(--text-secondary)' }}>
-              {isLogin ? 'Sign in to your dashboard' : `Join ${studentsCount.toLocaleString()}+ students getting hired`}
+              {isLogin 
+                ? 'Sign in to your dashboard' 
+                : form.role === 'company'
+                  ? `Join ${companiesCount.toLocaleString()}+ top companies hiring talents`
+                  : `Join ${studentsCount.toLocaleString()}+ students getting hired`
+              }
             </p>
           </div>
 
