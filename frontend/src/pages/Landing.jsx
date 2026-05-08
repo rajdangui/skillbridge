@@ -5,14 +5,6 @@ import { opportunityAPI } from '../services/api';
 
 const ROLES = ['Frontend Developer','ML Engineer','Data Scientist','Backend Engineer','DevOps Intern','Product Designer'];
 const COMPANIES = ['Google','Microsoft','Razorpay','Flipkart','Swiggy','Zerodha','CRED','Meesho','PhonePe','Groww','Ola','Zomato'];
-const FEATURES = [
-  { icon:'⚡', label:'AI-Powered',  title:'Cover Letter Generator', desc:'Tailored letters in seconds. 4 tones. Fully editable.',          accent:'var(--accent)' },
-  { icon:'📊', label:'Skill Match', title:'Gap Analyzer',           desc:'See your match score. Know exactly what to learn.',              accent:'var(--purple)' },
-  { icon:'🎯', label:'Free Tool',   title:'ATS Resume Checker',     desc:'Score your resume against ATS systems before you apply.',        accent:'var(--green)' },
-  { icon:'🎬', label:'Built-in',    title:'Learning Hub',           desc:'YouTube tutorials without leaving SkillBridge.',                 accent:'var(--teal)' },
-  { icon:'📬', label:'Real-time',   title:'Application Tracker',    desc:'All applications in one place. Status updates as they happen.',  accent:'var(--amber)' },
-  { icon:'🔎', label:'Smart',       title:'Job Matching',           desc:'2,400+ roles filtered to your exact skill set.',                 accent:'var(--red)' },
-];
 
 function Typewriter() {
   const [text, setText] = useState('');
@@ -41,6 +33,15 @@ export default function Landing() {
     studentsCount: 18000,
     placementRate: 94
   });
+
+  const FEATURES = [
+    { icon:'⚡', label:'AI-Powered',  title:'Cover Letter Generator', desc:'Tailored letters in seconds. 4 tones. Fully editable.',          accent:'var(--accent)' },
+    { icon:'📊', label:'Skill Match', title:'Gap Analyzer',           desc:'See your match score. Know exactly what to learn.',              accent:'var(--purple)' },
+    { icon:'🎯', label:'Free Tool',   title:'ATS Resume Checker',     desc:'Score your resume against ATS systems before you apply.',        accent:'var(--green)' },
+    { icon:'🎬', label:'Built-in',    title:'Learning Hub',           desc:'YouTube tutorials without leaving SkillBridge.',                 accent:'var(--teal)' },
+    { icon:'📬', label:'Real-time',   title:'Application Tracker',    desc:'All applications in one place. Status updates as they happen.',  accent:'var(--amber)' },
+    { icon:'🔎', label:'Smart',       title:'Job Matching',           desc:`${(stats.opportunitiesCount || 2400).toLocaleString()}+ roles filtered to your exact skill set.`,                 accent:'var(--red)' },
+  ];
 
   useEffect(() => {
     let active = true;
@@ -262,7 +263,7 @@ export default function Landing() {
                 Your next role is already posted.
               </h2>
               <p style={{ fontFamily:"'Geist'", fontSize:14.5, color:'var(--text-secondary)', lineHeight:1.6 }}>
-                Join 18,000+ students who launched their careers through SkillBridge.
+                Join ${(stats.studentsCount || 18000).toLocaleString()}+ students who launched their careers through SkillBridge.
               </p>
             </div>
             <div style={{ display:'flex', flexDirection:'column', gap:10, flexShrink:0 }}>
