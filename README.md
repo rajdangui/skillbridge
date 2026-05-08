@@ -18,10 +18,10 @@ graph TD
   WS["Socket.io (WebSockets)"]
   Mail["Nodemailer (SMTP)"]
 
-  Client <-->|HTTP / REST API| Server
-  Client <-->|WebSockets (Live Alerts)| WS
-  Server <--> WS
-  Server <--> DB
+  Client -->|HTTP / REST API| Server
+  Client -->|WebSockets (Live Alerts)| WS
+  Server --> WS
+  Server --> DB
   Server -->|JSON Prompts / Schema| AI
   Server -->|Binary Uploads| CDN
   Server -->|Verification Emails| Mail
