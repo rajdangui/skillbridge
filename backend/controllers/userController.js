@@ -111,7 +111,7 @@ exports.parseResume = async (req, res) => {
     }
 
     let parsedData = null;
-    if (process.env.GEMINI_API_KEY) {
+    if (process.env.MISTRAL_API_KEY) {
       const prompt = `You are an expert ATS data extractor. Below is the text extracted from a student's resume PDF. Extract and structure the information into the required JSON schema.
 - bio: Create a compelling 2-3 sentence professional summary based on their experiences.
 - skills: Extract all technical and soft skills, tools, frameworks, and programming languages as a simple array of strings. Limit to max 12 most relevant/important skills.
@@ -134,23 +134,33 @@ JSON Schema:
 }`;
 
       try {
-        const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 800, responseMimeType: 'application/json' }
+        const response = await axios.post('https://api.mistral.ai/v1/chat/completions', {
+          model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
+          messages: [
+            { role: 'system', content: 'You are a precise JSON extractor. You respond with raw JSON matching the requested schema and absolutely nothing else.' },
+            { role: 'user', content: prompt }
+          ],
+          response_format: { type: 'json_object' },
+          max_tokens: 1000,
+          temperature: 0.1
         }, {
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
           timeout: 45000
         });
 
-        const text = response.data.candidates[0]?.content?.parts[0]?.text.trim() || '';
-        const cleaned = text.replace(/```json|```/g, '').trim();
-        parsedData = JSON.parse(cleaned);
-      } catch (geminiErr) {
-        console.error('Gemini Resume Parsing error:', geminiErr.message);
+        const content = response.data.choices?.[0]?.message?.content?.trim();
+        if (content) {
+          parsedData = JSON.parse(content);
+        }
+      } catch (mistralErr) {
+        console.error('Mistral Resume Parsing error:', mistralErr.response?.data || mistralErr.message);
       }
     }
 
-    // Fallback if Gemini is not configured or fails
+    // Fallback if Mistral is not configured or fails
     if (!parsedData) {
       console.warn('Falling back to rule-based fallback resume parser.');
       parsedData = {
