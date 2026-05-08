@@ -27,6 +27,7 @@ export const userAPI = {
   getProfile: (id) => API.get(`/users/profile/${id}`),
   updateProfile: (id, data) => API.put(`/users/profile/${id}`, data),
   uploadResume: (formData) => API.post('/users/resume', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  parseResume: (formData) => API.post('/users/parse-resume', formData, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 60000 }),
   getStudents: () => API.get('/users/students'),
 };
 

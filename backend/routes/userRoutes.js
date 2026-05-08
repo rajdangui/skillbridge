@@ -4,7 +4,7 @@ const os = require('os');
 const router = express.Router();
 const { isAuthenticated } = require('../middleware/authMiddleware');
 const { validateProfileUpdate, handleValidation, uploadLimiter } = require('../middleware/security');
-const { getProfile, updateProfile, uploadResume, getAllStudents } = require('../controllers/userController');
+const { getProfile, updateProfile, uploadResume, getAllStudents, parseResume } = require('../controllers/userController');
 
 const storage = multer.diskStorage({
   destination: os.tmpdir(),
@@ -23,5 +23,6 @@ router.get('/students',      isAuthenticated, getAllStudents);
 router.get('/profile/:id',   getProfile);
 router.put('/profile/:id',   isAuthenticated, validateProfileUpdate, handleValidation, updateProfile);
 router.post('/resume',       isAuthenticated, uploadLimiter, upload.single('resume'), uploadResume);
+router.post('/parse-resume', isAuthenticated, uploadLimiter, upload.single('resume'), parseResume);
 
 module.exports = router;

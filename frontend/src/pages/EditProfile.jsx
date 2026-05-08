@@ -35,12 +35,37 @@ export default function EditProfile() {
   const { user, updateUser } = useAuth();
   const [loading, setLoading]   = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [parsingResume, setParsingResume] = useState(false);
   const [success, setSuccess]   = useState('');
   const [error, setError]       = useState('');
   const [newSkill, setNewSkill] = useState('');
   const [newTech, setNewTech]   = useState('');
   const [editingProjIdx, setEditingProjIdx] = useState(null);
   const fileRef = useRef();
+  const aiFileRef = useRef();
+
+  const handleAIParse = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    if (file.type !== 'application/pdf') { setError('PDF only'); return; }
+    setParsingResume(true); setError(''); setSuccess('');
+    try {
+      const fd = new FormData(); fd.append('resume', file);
+      const r = await userAPI.parseResume(fd);
+      const { bio, skills, college, branch } = r.data.parsedData || {};
+      setForm(p => ({
+        ...p,
+        bio: bio || p.bio,
+        skills: Array.isArray(skills) ? skills : p.skills,
+        college: college || p.college,
+        branch: branch || p.branch
+      }));
+      setSuccess('✨ Profile successfully pre-filled with AI! Review fields and click Save Changes.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'AI parsing failed. Please fill manually or try again.');
+    } finally {
+      setParsingResume(false);
+    }
+  };
 
   const [form, setForm] = useState({
     name:          user?.name          || '',
@@ -145,6 +170,72 @@ export default function EditProfile() {
           {error   && <div style={{ marginBottom:'var(--space-4)',padding:'10px 14px',background:'var(--red-muted)',border:'1px solid rgba(248,113,113,.2)',borderRadius:'var(--radius-md)',fontFamily:"'Geist'",fontSize:13,color:'var(--red)' }}>⚠ {error}</div>}
 
           <form onSubmit={handleSubmit} style={{ display:'flex',flexDirection:'column',gap:'var(--space-5)' }}>
+
+            {/* AI Profile Auto-Fill Card Banner */}
+            {user?.role==='student' && (
+              <div className="card" style={{
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(168,85,247,0.08) 100%)',
+                border: '1px dashed var(--accent-border)',
+                padding: '24px',
+                borderRadius: 'var(--radius-lg)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                  <div style={{
+                    width: 44,
+                    height: 44,
+                    background: 'var(--accent-muted)',
+                    border: '1px solid var(--accent-border)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 20,
+                    flexShrink: 0
+                  }}>
+                    ✨
+                  </div>
+                  <div>
+                    <h3 style={{ fontFamily: "'Geist'", fontWeight: 700, fontSize: 14.5, color: 'var(--text-primary)', marginBottom: 4 }}>
+                      One-Click AI Profile Auto-Fill
+                    </h3>
+                    <p style={{ fontFamily: "'Geist'", fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, maxWidth: 540 }}>
+                      Upload your existing resume PDF. Gemini AI will instantly analyze your background and automatically fill out your bio, skills, college, and branch for you!
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderTop: '1px solid var(--border-subtle)', paddingTop: 16 }}>
+                  <input ref={aiFileRef} type="file" accept=".pdf" onChange={handleAIParse} style={{ display: 'none' }} />
+                  <button
+                    type="button"
+                    onClick={() => aiFileRef.current.click()}
+                    disabled={parsingResume}
+                    className="btn btn-primary btn-sm"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%)',
+                      border: 'none',
+                      boxShadow: 'var(--shadow-md)',
+                      cursor: 'pointer',
+                      padding: '8px 16px',
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    {parsingResume ? '🧠 Analyzing Resume...' : '✨ Upload & Auto-Fill'}
+                  </button>
+                  <p style={{ fontFamily: "'Geist'", fontSize: 12, color: 'var(--text-tertiary)' }}>
+                    {parsingResume ? 'Our AI is reading your resume. Please wait...' : 'PDF only · max 5MB · No typing required!'}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Basic info */}
             <div className="card">
