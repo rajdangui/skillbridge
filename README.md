@@ -1,103 +1,110 @@
-# SkillBridge: Student Career & Academic Platform
+# <p align="center">🦉 SkillBridge: Student Career & Academic Platform 🎓</p>
 
-SkillBridge is a full-stack web application built on the MERN stack (MongoDB, Express, React, Node.js). It serves as a unified portal for college students to track their academic progress (semester courses, grades, timetables, and attendance) and transition into professional careers (searching jobs, parsing resumes, generating cover letters, and tracking application workflows).
+<p align="center">
+  <img src="https://img.shields.io/badge/MERN--Stack-MongoDB%20%7C%20Express%20%7C%20React%20%7C%20Node-blue?style=for-the-badge&logo=react&logoColor=white" alt="MERN Stack" />
+  <img src="https://img.shields.io/badge/Google%20Gemini-AI%20Powered-8E75C2?style=for-the-badge&logo=google&logoColor=white" alt="Google Gemini" />
+</p>
+
+<p align="center">
+  🕊️ <strong>SkillBridge</strong> is a modern MERN-stack student workspace. It seamlessly bridges the gap between academic milestones (attendance forecasting, grade logs, timetable sandboxes) and dynamic career opportunities (job boards, AI resume scorecards, context-aware cover letters, and live application trackers).
+</p>
 
 ---
 
-## Technical Architecture
+## 🔌 Systems Architecture
 
-The platform uses a decoupled client-server architecture with real-time updates and generative AI integrations:
+Here is how the core systems interact in real-time across the platform:
 
 ```mermaid
 graph TD
-  Client["React Frontend (Vite)"]
-  Server["Express.js Server (Node.js)"]
-  DB[("MongoDB (Mongoose)")]
-  AI["Google Gemini Flash API"]
-  CDN["Cloudinary (File Storage)"]
-  WS["Socket.io (WebSockets)"]
-  Mail["Nodemailer (SMTP)"]
+  Client["💻 React Frontend (Vite)"]
+  Server["⚙️ Express.js REST Server"]
+  DB["💾 MongoDB (Mongoose)"]
+  Gemini["🧠 Google Gemini Flash AI"]
+  Cloudinary["☁️ Cloudinary (Asset Storage)"]
+  SocketIO["⚡ Socket.io (Live WebSockets)"]
+  Nodemailer["📧 Nodemailer (SMTP Service)"]
 
-  Client -->|HTTP / REST API| Server
-  Client -->|WebSockets (Live Alerts)| WS
-  Server --> WS
+  Client --> Server
+  Client --> SocketIO
+  Server --> SocketIO
   Server --> DB
-  Server -->|JSON Prompts / Schema| AI
-  Server -->|Binary Uploads| CDN
-  Server -->|Verification Emails| Mail
+  Server --> Gemini
+  Server --> Cloudinary
+  Server --> Nodemailer
 ```
 
 ---
 
-## Core System Modules
+## ✨ Primary Platform Modules
 
-### 1. Academic Dashboard
-* **Grade Tracker:** Log courses and grades per semester to calculate active GPA and cumulative CGPA.
-* **Attendance Ledger:** Subject-wise log with a built-in forecast engine calculating minimum class attendance to meet academic compliance (75%).
-* **Timetable Scheduler:** Visual weekly calendar grid supporting custom subject slot configurations.
-* **Automated Grade Ingestion:** Upload academic marksheets (PDF format). The server parses the document using generative vision extraction, returning subject credits and grades to auto-populate the ledger.
+### 🎓 1. Academic & College Dashboard
+* **📊 Grades & Cumulative Ledger:** Log semester-wise courses and grade details to dynamically auto-calculate live GPA and cumulative CGPA trends.
+* **📅 Interactive Weekly Calendar:** Drag, drop, and configure calendar grid slots to build and maintain personal lecture schedules.
+* **⚠️ Attendance Ledger & Forecasts:** Track subject-wise attendance logs. Features a forecast engine calculating warning states or class-cut limits to maintain the 75% college threshold.
+* **📑 AI Marksheet PDF Ingester:** Upload any university grade sheets as a PDF to automatically scan, extract, verify, and populate course credits directly into your ledger.
 
-### 2. Career & Application Engine
-* **Job Board:** Dynamic filtering for internships, full-time jobs, freelance opportunities, and part-time roles.
-* **Interactive Auth Portal:** Features a split-pane registration UI with a large interactive Owl assistant whose gaze tracks password visibility states.
-* **Application Lifecycle:** Apply with verified profiles, attach parsed resumes, and track recruitment progress (Submitted, Review, Shortlisted, Selected, Rejected) in real-time over WebSockets.
+### 💼 2. Career & Recruiter Engine
+* **🔍 Live Postings Board:** Search and filter internships, full-time career roles, freelance postings, and part-time tasks.
+* **🦉 Gaze-Tracking Security mascot:** A beautiful authentication screen with a giant interactive Owl whose eyes dynamically track typing characters when password field is active.
+* **📬 Live Application Tracker:** Monitor recruiter action cycles (Submitted, Review, Shortlisted, Selected, Rejected) in real-time with automatic socket alerts.
 
-### 3. AI Copilot Integration (Google Gemini)
-* **Skill Gap Analyzer:** Matches profile skills against opportunity descriptions to compute match percentage scores and outline structured learning pathways.
-* **ATS Resume Audit:** Reviews plain-text resume strings to output formatting checklists, visual structural scores, and keyword suggestions.
-* **Cover Letter Generator:** Context-aware editor compiling background details into letters matching specific tone attributes (Professional, Enthusiastic, Concise, Creative).
-* **General AI Assistant:** Inline chat module with conversational memory synchronized to student dashboard metrics.
+### 🧠 3. Google Gemini AI Co-Pilot
+* **📊 Skill Gap Evaluator:** Cross-references resume strings against job descriptions to output score percentages and curated skill acquisition roadmaps.
+* **🎯 ATS Resume Scanner:** Audits resume formatting rules to provide immediate structural feedback and key phrase suggestions.
+* **✍️ Adaptive Cover Letter Generator:** Builds tailored cover letters matching 4 customizable tone templates (*Professional*, *Enthusiastic*, *Concise*, *Creative*).
+* **💬 Profile-Synced Assistant:** An interactive floating chatbot holding references to your profile milestones to provide guidance.
 
-### 4. Live Portfolio & PDF Compiler
-* **Resume Builder:** Interactive editor supporting 3 system templates: Minimalist, Modern, and ATS-Safe.
-* **A4 Preview Canvas:** Native sandbox displaying layout previews updated instantly upon input changes.
-* **Static Export:** Exports resumes directly to clean, standard PDF documents.
+### 📄 4. Professional Resume Builder
+* **📑 Dynamic Layout Templates:** Instantly preview and render portfolios in 3 clean styles: *Minimalist*, *Modern*, and *ATS-Safe*.
+* **📏 Live A4 preview Canvas:** A reactive side-by-side editing sandbox mapping changes in real-time.
+* **📥 PDF Compile Engine:** Native download pipeline compiling A4 canvas structures into professional static PDFs.
 
 ---
 
-## Directory Layout
+## 📂 Repository Workspace Structure
 
 ```text
 skillbridge/
 ├── backend/
-│   ├── config/          # Passport configurations & DB adapters
-│   ├── controllers/     # Route controller actions (Auth, Academic, Ops, etc.)
-│   ├── middleware/      # Auth guards, request validation rules
-│   ├── models/          # Mongoose Schema definitions
-│   ├── routes/          # Express route registrations
-│   └── server.js        # Server entry point (Express, Socket.io, HTTP)
+│   ├── config/          # ⚙️ Database connections & Passport configurations
+│   ├── controllers/     # 🕹️ Route controllers (Auth, Academic, Ops, etc.)
+│   ├── middleware/      # 🛡️ Session verifiers & request validation rules
+│   ├── models/          # 💾 Mongoose Document Schemas
+│   ├── routes/          # 🛣️ Express route registrations
+│   └── server.js        # 🔌 Server entry point (Express, Sockets, Http)
 └── frontend/
     ├── src/
-    │   ├── components/  # Shared layouts, visual components, notification feeds
-    │   ├── context/     # Global state controls (AuthContext)
-    │   ├── pages/       # Route page containers
-    │   └── services/    # Axiom API network bindings
-    └── vite.config.js   # Vite configuration script
+    │   ├── components/  # 🧩 Layouts, visual widgets, notification bells
+    │   ├── context/     # 🔒 Global state controls (AuthContext)
+    │   ├── pages/       # 📺 Responsive page views (20 unique files)
+    │   └── services/    # 📞 API axios client connections
+    └── vite.config.js   # 🛠️ Vite bundle configuration
 ```
 
 ---
 
-## Environment Configuration
+## ⚙️ Environment Parameters
 
-Create a `backend/.env` file with the following variables:
+Create a `backend/.env` file in the backend root directory:
 
 ```ini
-# Core Configuration
+# Core Configuration 🔌
 PORT=5000
 MONGO_URI=mongodb://localhost:27017/skillbridge
 SESSION_SECRET=YOUR_32_CHAR_RANDOM_SECRET_KEY
 CLIENT_URL=http://localhost:5173
 
-# Third-Party Integrations
+# Third-Party API Integrations 🧠
 GEMINI_API_KEY=YOUR_GOOGLE_GEMINI_API_KEY
 YOUTUBE_API_KEY=YOUR_YOUTUBE_DATA_API_V3_KEY
 
-# Storage (Cloudinary)
+# Cloud Storage (Cloudinary) ☁️
 CLOUDINARY_CLOUD_NAME=YOUR_CLOUDINARY_NAME
 CLOUDINARY_API_KEY=YOUR_CLOUDINARY_KEY
 CLOUDINARY_API_SECRET=YOUR_CLOUDINARY_SECRET
 
-# Email (SMTP)
+# Email Service (SMTP / Mailer) 📧
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=YOUR_EMAIL_ADDRESS
@@ -106,49 +113,50 @@ SMTP_PASS=YOUR_EMAIL_PASSWORD
 
 ---
 
-## Installation & Setup
+## 🛠️ Local Installation & Launch Guide
 
-### Prerequisites
-* **Node.js** v18.0.0 or higher.
-* **MongoDB** server running locally or accessible via cloud URI.
+### 📋 Prerequisites
+* **Node.js** v18.0.0 or higher installed.
+* **MongoDB** server running locally or accessible via cloud connection string.
 
-### 1. Initialize Server Environment
+### ⚙️ 1. Start backend Server
 ```bash
 cd backend
 npm install
-# Set up .env parameters before starting
+# Configure your .env file inside backend/ directory
 npm run dev
 ```
 
-### 2. Initialize Frontend App
+### 💻 2. Start Frontend App
 ```bash
 cd ../frontend
 npm install
 npm run dev
 ```
-Open `http://localhost:5173` to browse the portal.
+Explore the workspace live at `http://localhost:5173`.
 
 ---
 
-## API References
+## 🚪 API Navigation Directory
 
-| Context Path | Authorized | Primary Resource Description |
+| Namespace | Access Level | Description |
 | :--- | :---: | :--- |
-| `/api/auth` | Public / Session | Login, Registration, Password Resets, Google/GitHub OAuth links. |
-| `/api/users` | Session Protected | Profile configurations, skill mappings, and resume parsing. |
-| `/api/opportunities` | Session Protected | Job opportunities feed, listing creation, and public stats telemetry. |
-| `/api/applications` | Recruiter / Student | Apply to jobs, retrieve student logs, and modify application stages. |
-| `/api/academic` | Student Only | Marks rosters, timetable matrixes, and PDF mark sheet grades analysis. |
-| `/api/notifications`| User Protected | Read unread count, delete notification items, and push updates. |
-| `/api/resume` | Student Only | Retrieve portfolio state, save resume fields, and print PDF logs. |
+| `/api/auth` | 🔓 Public / Session | Sign-up, Sign-in, OAuth providers, OTP verifications, password resets. |
+| `/api/users` | 🔒 Session Required | Profile settings, custom skill matrices, resume uploads. |
+| `/api/opportunities` | 🔒 Session Required | Job postings feed, opportunity creators, and dynamic metrics. |
+| `/api/applications` | 🔒 Recruiter / Student| Submit application tokens, list company workflows, update recruitment logs. |
+| `/api/academic` | 🎓 Student Restricted | Academic ledger logs, attendance cards, timetable matrixes. |
+| `/api/notifications`| 🔒 User Restricted | Real-time notifications count, read statuses, and alert limits. |
+| `/api/resume` | 🎓 Student Restricted | Resume builders data fields, user templates, static PDF generators. |
 
 ---
 
-## Academic Submission Details
+## 🏫 Academic Project Profile
 
-* **Project Title:** SkillBridge — Student Career & Academic Management System
-* **Author:** Raj Dangui
-* **PRN:** 1292240011
-* **Degree Program:** SY MCA (Master of Computer Applications)
-* **Institution:** MIT World Peace University (MIT-WPU), Pune, India
-* **Faculty Advisor:** Prof. Sudeepta Banerji
+* **🏷️ Project Designation:** SkillBridge — Student Career & Academic Management System
+* **👤 Author Name:** Raj Dangui
+* **📝 University PRN:** 1292240011
+* **🎓 Degree Program:** SY MCA (Master of Computer Applications)
+* **🏫 Department Faculty:** Faculty of Management & Technology
+* **📍 University Campus:** MIT World Peace University (MIT-WPU), Pune, India
+* **👩‍🏫 Project Advisor:** Prof. Sudeepta Banerji
