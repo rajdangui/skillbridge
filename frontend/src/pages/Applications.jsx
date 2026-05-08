@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { applicationAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import SearchBar from '../components/SearchBar';
 
 const STATUS_META = {
   applied:    {label:'Applied',    accent:'var(--text-accent)'},
@@ -13,11 +14,12 @@ const STATUS_META = {
 
 export default function Applications() {
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState(null);
+  const [search, setSearch] = useState(searchParams.get('search') || '');
   const oppId = searchParams.get('opportunity');
   const isCompany = user?.role === 'company';
 
@@ -43,8 +45,37 @@ export default function Applications() {
     catch(e){console.error(e);}finally{setUpdatingId(null);}
   };
 
+  const handleSearch = (q) => {
+    setSearch(q);
+    if (q) {
+      setSearchParams({ ...Object.fromEntries(searchParams.entries()), search: q });
+    } else {
+      const copy = { ...Object.fromEntries(searchParams.entries()) };
+      delete copy.search;
+      setSearchParams(copy);
+    }
+  };
+
   const isCompanyView = isCompany;
-  const filtered = statusFilter==='all'?apps:apps.filter(a=>a.status===statusFilter);
+  const filtered = apps
+    .filter(a => statusFilter === 'all' || a.status === statusFilter)
+    .filter(a => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      const oppTitle = a.opportunityId?.title?.toLowerCase() || '';
+      const oppCompany = a.opportunityId?.company?.toLowerCase() || '';
+      const studName = a.studentId?.name?.toLowerCase() || '';
+      const studCollege = a.studentId?.college?.toLowerCase() || '';
+      const studBranch = a.studentId?.branch?.toLowerCase() || '';
+      const studSkills = a.studentId?.skills?.map(s => s.toLowerCase()).join(' ') || '';
+      
+      return oppTitle.includes(q) || 
+             oppCompany.includes(q) || 
+             studName.includes(q) || 
+             studCollege.includes(q) || 
+             studBranch.includes(q) || 
+             studSkills.includes(q);
+    });
   const counts = Object.keys(STATUS_META).reduce((a,s)=>({...a,[s]:apps.filter(x=>x.status===s).length}),{});
 
   return (
@@ -71,6 +102,12 @@ export default function Applications() {
         </div>
       )}
 
+      {apps.length > 0 && (
+        <div style={{ marginBottom:'var(--space-6)', maxWidth:480 }}>
+          <SearchBar onSearch={handleSearch} placeholder={isCompanyView ? "Search applicants by name, role, college, skill..." : "Search applications by role, company..."} defaultValue={search} />
+        </div>
+      )}
+
       {loading ? (
         <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-2)' }}>
           {[...Array(4)].map((_,i)=><div key={i} className="skeleton" style={{ height:72 }}/>)}
@@ -82,8 +119,9 @@ export default function Applications() {
           {isCompanyView && <Link to="/opportunities/post" className="btn btn-primary btn-sm">Post a Role</Link>}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card" style={{ textAlign:'center', padding:'var(--space-10)' }}>
-          <button onClick={()=>setStatusFilter('all')} className="btn btn-secondary btn-sm">Show All</button>
+        <div className="card" style={{ textAlign:'center', padding:'var(--space-12)', border:'1px dashed var(--border-default)' }}>
+          <p style={{ fontFamily:"'Geist'", fontSize:14, color:'var(--text-secondary)', marginBottom:'var(--space-4)' }}>No applications match your search filters</p>
+          <button onClick={() => { setStatusFilter('all'); handleSearch(''); }} className="btn btn-secondary btn-sm">Clear Filters</button>
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-2)' }}>

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { opportunityAPI, applicationAPI, notificationAPI } from '../services/api';
 import OpportunityCard from '../components/OpportunityCard';
+import SearchBar from '../components/SearchBar';
 
 const SKILL_MAP = { React:['TypeScript','Next.js','GraphQL'], Node:['Docker','Redis','PostgreSQL'], Python:['ML','FastAPI','Data Science'], JavaScript:['TypeScript','React','Node.js'] };
 function getRec(skills=[]) {
@@ -23,6 +24,7 @@ function StatCard({ val, label, sub, accent }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [opps, setOpps] = useState([]);
   const [apps, setApps] = useState([]);
   const [companyStats, setCompanyStats] = useState({ totalApplicants: 0, pendingReview: 0, shortlisted: 0, accepted: 0, reviewed: 0 });
@@ -92,6 +94,65 @@ export default function Dashboard() {
           </h1>
         </div>
         <Link to="/profile/edit" className="btn btn-secondary btn-sm">Edit Profile</Link>
+      </div>
+
+      {/* Homepage Quick Search Hero */}
+      <div className="card" style={{
+        marginBottom:'var(--space-8)',
+        padding:'var(--space-6) var(--space-8)',
+        background:'linear-gradient(135deg, var(--bg-surface) 0%, rgba(59,130,246,0.03) 100%)',
+        border:'1px solid var(--border-subtle)',
+        position:'relative',
+        overflow:'hidden'
+      }}>
+        <div style={{ position:'absolute', top:-40, right:-40, width:180, height:180, borderRadius:'50%', background:'radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 70%)', pointerEvents:'none' }}/>
+        
+        <h2 style={{ fontFamily:"'Geist'", fontWeight:600, fontSize:15, color:'var(--text-primary)', marginBottom:'var(--space-3)' }}>
+          {isCompany ? "Search Candidates & Postings" : "What are you looking for today?"}
+        </h2>
+        
+        <div style={{ display:'flex', gap:'var(--space-3)', alignItems:'center', maxWidth:640 }}>
+          <SearchBar
+            onSearch={(q) => {
+              if (isCompany) {
+                navigate(`/applications?search=${encodeURIComponent(q)}`);
+              } else {
+                navigate(`/opportunities?search=${encodeURIComponent(q)}`);
+              }
+            }}
+            placeholder={isCompany ? "Search applicants by name, college, skills..." : "Search opportunities, roles, or learning topics..."}
+            style={{ flex:1 }}
+          />
+        </div>
+        
+        {!isCompany && (
+          <div style={{ display:'flex', alignItems:'center', gap:'var(--space-4)', marginTop:'var(--space-3)' }}>
+            <span style={{ fontFamily:"'Geist'", fontSize:11, color:'var(--text-tertiary)' }}>Quick search:</span>
+            <div style={{ display:'flex', gap:6 }}>
+              {['React', 'Node.js', 'Python', 'Internships'].map(tag => (
+                <Link
+                  key={tag}
+                  to={tag === 'Internships' ? '/opportunities?type=internship' : `/opportunities?search=${encodeURIComponent(tag)}`}
+                  style={{
+                    fontFamily:"'Geist'",
+                    fontSize:11.5,
+                    color:'var(--text-secondary)',
+                    textDecoration:'none',
+                    background:'var(--bg-elevated)',
+                    border:'1px solid var(--border-subtle)',
+                    padding:'2px 8px',
+                    borderRadius:4,
+                    transition:'all var(--t-fast)'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent-border)'; e.currentTarget.style.color='var(--text-accent)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border-subtle)'; e.currentTarget.style.color='var(--text-secondary)'; }}
+                >
+                  {tag}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats bento */}
