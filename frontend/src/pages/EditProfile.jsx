@@ -202,7 +202,7 @@ export default function EditProfile() {
                       One-Click AI Profile Auto-Fill
                     </h3>
                     <p style={{ fontFamily: "'Geist'", fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, maxWidth: 540 }}>
-                      Upload your existing resume PDF. Gemini AI will instantly analyze your background and automatically fill out your bio, skills, college, and branch for you!
+                      Upload your existing resume PDF. Mistral AI will instantly analyze your background and automatically fill out your bio, skills, college, and branch for you!
                     </p>
                   </div>
                 </div>
