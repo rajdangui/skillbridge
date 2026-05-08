@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const ROLES = ['Frontend Developer','ML Engineer','Data Scientist','Backend Engineer','DevOps Intern','Product Designer'];
 const COMPANIES = ['Google','Microsoft','Razorpay','Flipkart','Swiggy','Zerodha','CRED','Meesho','PhonePe','Groww','Ola','Zomato'];
@@ -30,6 +31,7 @@ function Typewriter() {
 }
 
 export default function Landing() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -113,7 +115,11 @@ export default function Landing() {
               </form>
 
               <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
-                <Link to="/register" className="btn btn-primary btn-lg">Get started free →</Link>
+                {user ? (
+                  <Link to="/dashboard" className="btn btn-primary btn-lg">Go to Dashboard →</Link>
+                ) : (
+                  <Link to="/register" className="btn btn-primary btn-lg">Get started free →</Link>
+                )}
                 <Link to="/opportunities" className="btn btn-secondary btn-lg">Browse roles</Link>
               </div>
               {/* Social proof */}
@@ -228,7 +234,11 @@ export default function Landing() {
               </p>
             </div>
             <div style={{ display:'flex', flexDirection:'column', gap:10, flexShrink:0 }}>
-              <Link to="/register" className="btn btn-primary btn-lg">Create free account →</Link>
+              {user ? (
+                <Link to="/dashboard" className="btn btn-primary btn-lg">Go to Dashboard →</Link>
+              ) : (
+                <Link to="/register" className="btn btn-primary btn-lg">Create free account →</Link>
+              )}
               <Link to="/opportunities" className="btn btn-secondary btn-lg">Browse roles</Link>
             </div>
           </div>
