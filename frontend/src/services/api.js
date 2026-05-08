@@ -33,6 +33,7 @@ export const userAPI = {
 
 export const opportunityAPI = {
   getAll: (params) => API.get('/opportunities', { params }),
+  getPublicStats: () => API.get('/opportunities/public-stats'),
   getById: (id) => API.get(`/opportunities/${id}`),
   getMine: () => API.get('/opportunities/my'),
   create: (data) => API.post('/opportunities', data),

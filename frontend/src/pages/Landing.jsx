@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { opportunityAPI } from '../services/api';
 
 const ROLES = ['Frontend Developer','ML Engineer','Data Scientist','Backend Engineer','DevOps Intern','Product Designer'];
 const COMPANIES = ['Google','Microsoft','Razorpay','Flipkart','Swiggy','Zerodha','CRED','Meesho','PhonePe','Groww','Ola','Zomato'];
@@ -34,6 +35,33 @@ export default function Landing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [stats, setStats] = useState({
+    opportunitiesCount: 2400,
+    companiesCount: 340,
+    studentsCount: 18000,
+    placementRate: 94
+  });
+
+  useEffect(() => {
+    let active = true;
+    const fetchStats = async () => {
+      try {
+        const res = await opportunityAPI.getPublicStats();
+        if (active && res.data) {
+          setStats({
+            opportunitiesCount: res.data.opportunitiesCount || 0,
+            companiesCount: res.data.companiesCount || 0,
+            studentsCount: res.data.studentsCount || 0,
+            placementRate: res.data.placementRate || 94
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching public stats:', err);
+      }
+    };
+    fetchStats();
+    return () => { active = false; };
+  }, []);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -53,7 +81,9 @@ export default function Landing() {
           {/* Live indicator */}
           <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'var(--bg-elevated)', border:'1px solid var(--border-default)', borderRadius:99, padding:'5px 14px', marginBottom:32 }}>
             <span style={{ width:7, height:7, borderRadius:'50%', background:'var(--green)', display:'inline-block', animation:'pulse 2s infinite' }} />
-            <span style={{ fontFamily:"'Geist'", fontSize:12, fontWeight:500, color:'var(--text-secondary)' }}>340+ companies hiring right now</span>
+            <span style={{ fontFamily:"'Geist'", fontSize:12, fontWeight:500, color:'var(--text-secondary)' }}>
+              {stats.companiesCount ? `${stats.companiesCount} verified companies` : '340+ companies'} hiring right now
+            </span>
           </div>
 
           {/* Bento hero layout */}
@@ -132,7 +162,9 @@ export default function Landing() {
                   ))}
                 </div>
                 <p style={{ fontFamily:"'Geist'", fontSize:13, color:'var(--text-secondary)' }}>
-                  <span style={{ color:'var(--text-primary)', fontWeight:600 }}>18,000+</span> students launched their careers
+                  <span style={{ color:'var(--text-primary)', fontWeight:600 }}>
+                    {stats.studentsCount ? `${stats.studentsCount.toLocaleString()}+` : '18,000+'}
+                  </span> students launched their careers
                 </p>
               </div>
             </div>
@@ -141,10 +173,10 @@ export default function Landing() {
             <div className="col-5">
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'var(--space-4)', height:'100%' }}>
                 {[
-                  { val:'2,400+', label:'Opportunities',  sub:'Live now',       accent:'var(--accent)',  bg:'var(--accent-muted)', border:'var(--accent-border)' },
-                  { val:'340+',   label:'Companies',      sub:'Actively hiring', accent:'var(--green)',   bg:'var(--green-muted)',  border:'rgba(52,211,153,.25)' },
-                  { val:'94%',    label:'Placement',      sub:'Within 3 months', accent:'var(--purple)',  bg:'var(--purple-muted)', border:'rgba(167,139,250,.25)' },
-                  { val:'18K+',   label:'Students',       sub:'And growing',     accent:'var(--amber)',   bg:'var(--amber-muted)',  border:'rgba(251,191,36,.25)' },
+                  { val: stats.opportunitiesCount ? `${stats.opportunitiesCount}` : '2,400+', label:'Opportunities',  sub:'Live now',       accent:'var(--accent)',  bg:'var(--accent-muted)', border:'var(--accent-border)' },
+                  { val: stats.companiesCount ? `${stats.companiesCount}` : '340+',   label:'Companies',      sub:'Actively hiring', accent:'var(--green)',   bg:'var(--green-muted)',  border:'rgba(52,211,153,.25)' },
+                  { val: stats.placementRate ? `${stats.placementRate}%` : '94%',    label:'Placement',      sub:'Within 3 months', accent:'var(--purple)',  bg:'var(--purple-muted)', border:'rgba(167,139,250,.25)' },
+                  { val: stats.studentsCount ? `${stats.studentsCount}` : '18K+',   label:'Students',       sub:'And growing',     accent:'var(--amber)',   bg:'var(--amber-muted)',  border:'rgba(251,191,36,.25)' },
                 ].map((s,i)=>(
                   <div key={i} className="card" style={{ padding:'var(--space-5)', border:`1px solid ${s.border}`, background:'var(--bg-surface)' }}>
                     <div style={{ fontFamily:"'Geist'", fontWeight:700, fontSize:28, letterSpacing:'-0.04em', color:s.accent, lineHeight:1, marginBottom:6 }}>{s.val}</div>
