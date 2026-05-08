@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { opportunityAPI } from '../services/api';
 
 function validate(name, value) {
   if (name==='name')     return !value.trim()?'Required':value.trim().length<2?'Too short':'';
@@ -18,9 +19,26 @@ const STR_COLOR = ['','var(--red)','var(--red)','var(--amber)','var(--green)','v
 // Owl — outside to prevent remount/focus-loss
 function Owl({ watching }) {
   return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginBottom:24 }}>
+    <div className="owl-floating-container" style={{
+      position: 'absolute',
+      right: 'calc(50% + 240px)',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '24px',
+      borderRadius: 'var(--radius-lg)',
+      background: 'rgba(255, 255, 255, 0.03)',
+      backdropFilter: 'blur(12px)',
+      border: '1px solid var(--border-subtle)',
+      boxShadow: 'var(--shadow-lg)',
+      zIndex: 10,
+      width: 140,
+      transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+    }}>
       <div style={{ position:'relative' }}>
-        <svg viewBox="0 0 80 80" width="68" height="68">
+        <svg viewBox="0 0 80 80" width="80" height="80">
           <ellipse cx="40" cy="54" rx="21" ry="19" fill="var(--bg-elevated)"/>
           <ellipse cx="40" cy="34" rx="18" ry="16" fill="var(--bg-overlay)"/>
           <polygon points="26,21 22,9 31,17" fill="var(--bg-overlay)"/>
@@ -45,8 +63,8 @@ function Owl({ watching }) {
           <ellipse cx="20" cy="55" rx="7" ry="12" fill="var(--bg-elevated)" transform="rotate(-8,20,55)"/>
           <ellipse cx="60" cy="55" rx="7" ry="12" fill="var(--bg-elevated)" transform="rotate(8,60,55)"/>
         </svg>
-        <div style={{ position:'absolute', top:-26, left:'50%', transform:'translateX(-50%)', whiteSpace:'nowrap', padding:'3px 10px', borderRadius:99, fontSize:11, fontFamily:"'Geist'", fontWeight:500, background:watching?'var(--accent-muted)':'var(--bg-elevated)', color:watching?'var(--text-accent)':'var(--text-secondary)', border:`1px solid ${watching?'var(--accent-border)':'var(--border-subtle)'}` }}>
-          {watching ? 'I see you! 👀' : 'Not looking 🙈'}
+        <div style={{ marginTop: 12, textAlign: 'center', whiteSpace:'nowrap', padding:'3px 10px', borderRadius:99, fontSize:11, fontFamily:"'Geist'", fontWeight:600, background:watching?'var(--accent-muted)':'var(--bg-elevated)', color:watching?'var(--text-accent)':'var(--text-secondary)', border:`1px solid ${watching?'var(--accent-border)':'var(--border-subtle)'}`, transition: 'all 0.2s ease' }}>
+          {watching ? 'I see you! 👀' : 'Security Mode 🙈'}
         </div>
       </div>
     </div>
@@ -111,10 +129,33 @@ export default function AuthPage({ mode='login' }) {
   const [touched, setTouched] = useState({});
   const [fieldErrors, setFieldErrors] = useState({});
   const [form, setForm] = useState({ name:'',email:'',password:'',role:'student',college:'',branch:'' });
+  const [studentsCount, setStudentsCount] = useState(18000);
   const score = strength(form.password);
 
   // Fix: reset showPassword on every mode switch
-  useEffect(() => { setIsLogin(mode==='login'); setServerError(''); setFieldErrors({}); setTouched({}); setShowPassword(false); }, [mode]);
+  useEffect(() => { 
+    setIsLogin(mode==='login'); 
+    setServerError(''); 
+    setFieldErrors({}); 
+    setTouched({}); 
+    setShowPassword(false); 
+  }, [mode]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchStats = async () => {
+      try {
+        const res = await opportunityAPI.getPublicStats();
+        if (active && res.data && res.data.studentsCount) {
+          setStudentsCount(res.data.studentsCount);
+        }
+      } catch (err) {
+        // dynamic failover
+      }
+    };
+    fetchStats();
+    return () => { active = false; };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target; setForm(p=>({...p,[name]:value})); setServerError('');
@@ -145,18 +186,26 @@ export default function AuthPage({ mode='login' }) {
   const fp = (name,type,label,placeholder,required=false) => ({ name,type,label,placeholder,required, value:form[name], error:fieldErrors[name]||'', touched:touched[name]||false, isValid:!!(touched[name]&&!fieldErrors[name]&&form[name]), onChange:handleChange, onBlur:handleBlur, showPassword, onToggle:()=>setShowPassword(v=>!v), isLogin, score });
 
   return (
-    <div style={{ minHeight:'calc(100vh - 56px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 16px', background:'var(--bg-base)' }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ width:'100%', maxWidth:400 }}>
-        <Owl watching={showPassword} />
+    <div style={{ height:'calc(100vh - 56px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 16px', background:'var(--bg-base)', overflow:'hidden', position:'relative' }}>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @media (max-width: 1024px) {
+          .owl-floating-container {
+            display: none !important;
+          }
+        }
+      `}</style>
+      
+      <Owl watching={showPassword} />
 
+      <div style={{ width:'100%', maxWidth:400, position:'relative', zIndex:5 }}>
         {/* Header */}
-        <div style={{ textAlign:'center', marginBottom:28 }}>
+        <div style={{ textAlign:'center', marginBottom:24 }}>
           <h1 style={{ fontFamily:"'Geist'", fontWeight:700, fontSize:22, letterSpacing:'-0.03em', color:'var(--text-primary)', marginBottom:6 }}>
             {isLogin?'Welcome back':'Create account'}
           </h1>
           <p style={{ fontFamily:"'Geist'", fontSize:14, color:'var(--text-secondary)' }}>
-            {isLogin?'Sign in to your dashboard':'Join 18,000+ students getting hired'}
+            {isLogin?'Sign in to your dashboard':`Join ${studentsCount.toLocaleString()}+ students getting hired`}
           </p>
         </div>
 
