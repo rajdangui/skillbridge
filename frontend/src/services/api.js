@@ -82,7 +82,12 @@ export const skillGapAPI = {
 };
 
 export const atsAPI = {
-  analyze: (data) => API.post('/ats/analyze', data),
+  analyze: (data) => {
+    if (data instanceof FormData) {
+      return API.post('/ats/analyze', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    }
+    return API.post('/ats/analyze', data);
+  }
 };
 
 export const academicAPI = {

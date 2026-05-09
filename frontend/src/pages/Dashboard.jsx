@@ -6,10 +6,11 @@ import OpportunityCard from '../components/OpportunityCard';
 import SearchBar from '../components/SearchBar';
 
 const SKILL_MAP = { React:['TypeScript','Next.js','GraphQL'], Node:['Docker','Redis','PostgreSQL'], Python:['ML','FastAPI','Data Science'], JavaScript:['TypeScript','React','Node.js'] };
-function getRec(skills=[]) {
-  const out=new Set(); skills.forEach(s=>{const k=Object.keys(SKILL_MAP).find(k=>s.toLowerCase().includes(k.toLowerCase())||k.toLowerCase().includes(s.toLowerCase()));if(k)SKILL_MAP[k].forEach(r=>out.add(r));});
+function getRec(skills) {
+  const safeSkills = Array.isArray(skills) ? skills : [];
+  const out=new Set(); safeSkills.forEach(s=>{if(!s)return;const k=Object.keys(SKILL_MAP).find(k=>s.toLowerCase().includes(k.toLowerCase())||k.toLowerCase().includes(s.toLowerCase()));if(k)SKILL_MAP[k].forEach(r=>out.add(r));});
   if(!out.size)['System Design','Docker','TypeScript','Git','SQL'].forEach(s=>out.add(s));
-  return [...out].filter(r=>!skills.map(s=>s.toLowerCase()).includes(r.toLowerCase())).slice(0,5);
+  return [...out].filter(r=>!safeSkills.map(s=>s?s.toLowerCase():'').includes(r.toLowerCase())).slice(0,5);
 }
 
 function StatCard({ val, label, sub, accent }) {

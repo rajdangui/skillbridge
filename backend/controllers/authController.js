@@ -34,8 +34,6 @@ exports.register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-    const rawToken = generateToken();
-    const hashedToken = hashToken(rawToken);
 
     const user = await User.create({
       name: name.trim(),
@@ -44,14 +42,12 @@ exports.register = async (req, res) => {
       role: role || 'student',
       college: college?.trim() || '',
       branch: branch?.trim() || '',
-      isEmailVerified: false,
-      emailVerifyToken: hashedToken,
-      emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      isEmailVerified: true
     });
 
-    // Send verification email — non-blocking, never crash on failure
-    getEmailUtils().sendVerificationEmail(user, rawToken)
-      .catch(err => console.warn('Verification email failed (non-fatal):', err.message));
+    // Send welcome email — non-blocking, never crash on failure
+    getEmailUtils().sendWelcomeEmail(user)
+      .catch(err => console.warn('Welcome email failed (non-fatal):', err.message));
 
     req.login(user, (loginErr) => {
       if (loginErr) {
@@ -59,7 +55,7 @@ exports.register = async (req, res) => {
         return res.status(500).json({ message: 'Account created but auto-login failed. Please log in manually.' });
       }
       res.status(201).json({
-        message: 'Account created! Please check your email to verify.',
+        message: 'Account created successfully! Welcome to SkillBridge.',
         user: user.toJSON(),
         emailSent: true
       });

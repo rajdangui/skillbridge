@@ -83,18 +83,68 @@ export default function ATSChecker() {
   const [error, setError] = useState('');
   const [charCount, setCharCount] = useState(0);
 
+  // File upload state
+  const [tab, setTab] = useState('paste'); // 'paste' or 'upload'
+  const [file, setFile] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
+
   useEffect(() => {
     opportunityAPI.getAll({ limit: 50 })
       .then(r => setOpps(r.data.opportunities || []))
       .catch(console.error);
   }, []);
 
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile.type === 'application/pdf') {
+        setFile(droppedFile);
+        setError('');
+      } else {
+        setError('Only PDF resume files are supported.');
+      }
+    }
+  };
+
   const handleAnalyze = async () => {
-    if (resumeText.trim().length < 50) { setError('Paste your resume text first (min 50 characters)'); return; }
+    setError('');
+    const formData = new FormData();
+    
+    if (tab === 'upload') {
+      if (!file) { setError('Please select or upload a resume PDF file first.'); return; }
+      formData.append('resume', file);
+    } else {
+      if (resumeText.trim().length < 50) { setError('Paste your resume text first (min 50 characters)'); return; }
+      formData.append('resumeText', resumeText.trim());
+    }
+    
+    if (opportunityId) {
+      formData.append('opportunityId', opportunityId);
+    }
+
     setLoading(true); setError(''); setResult(null);
     try {
-      const r = await atsAPI.analyze({ resumeText: resumeText.trim(), opportunityId: opportunityId || undefined });
+      const r = await atsAPI.analyze(formData);
       setResult(r.data);
+      // Sync extracted text and switch tab so they can see and edit the text!
+      if (tab === 'upload' && r.data.resumeText) {
+        setResumeText(r.data.resumeText);
+        setCharCount(r.data.resumeText.length);
+        setTab('paste');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Analysis failed. Please try again.');
     } finally {
@@ -140,34 +190,173 @@ export default function ATSChecker() {
         {/* Input panel — 5 cols */}
         <div className="col-5" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
 
-          {/* Resume text input */}
+          {/* Resume text/file input */}
           <div className="card">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
               <p className="label">Your Resume</p>
               {user?.resume && (
                 <a href={user.resume} target="_blank" rel="noreferrer"
                   style={{ fontFamily: "'Geist'", fontSize: 12, color: 'var(--text-accent)', textDecoration: 'none' }}>
-                  View uploaded ↗
+                  View Profile Resume ↗
                 </a>
               )}
             </div>
-            <textarea
-              value={resumeText}
-              onChange={e => { setResumeText(e.target.value); setCharCount(e.target.value.length); setError(''); }}
-              className="input"
-              style={{ resize: 'vertical', minHeight: 280, fontFamily: 'var(--font-mono)', fontSize: 12.5, lineHeight: 1.6 }}
-              placeholder={`Paste your full resume text here...\n\nTip: Open your PDF, select all (Ctrl+A), copy, and paste here.\n\nExample:\nJohn Doe\njohn@email.com | github.com/johndoe\n\nEDUCATION\nB.Tech Computer Science — MIT Pune (2021–2025)\n\nSKILLS\nReact, Node.js, Python, MongoDB, Docker\n\nPROJECTS\n- E-commerce platform built with React + Node.js...`}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: charCount < 50 ? 'var(--red)' : 'var(--text-tertiary)' }}>
-                {charCount} chars {charCount < 50 ? `(need ${50 - charCount} more)` : ''}
-              </span>
-              {charCount > 0 && (
-                <button onClick={() => { setResumeText(''); setCharCount(0); }} style={{ fontFamily: "'Geist'", fontSize: 11, color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                  Clear ×
-                </button>
-              )}
+
+            {/* Tab Toggles */}
+            <div style={{ display: 'flex', gap: 4, background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: 3, marginBottom: 16 }}>
+              <button
+                type="button"
+                onClick={() => setTab('paste')}
+                style={{
+                  flex: 1,
+                  fontFamily: "'Geist'",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  padding: '6px 12px',
+                  background: tab === 'paste' ? 'var(--bg-elevated)' : 'transparent',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  boxShadow: tab === 'paste' ? 'var(--shadow-sm)' : 'none',
+                  color: tab === 'paste' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s'
+                }}
+              >
+                📝 Paste Text
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab('upload')}
+                style={{
+                  flex: 1,
+                  fontFamily: "'Geist'",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  padding: '6px 12px',
+                  background: tab === 'upload' ? 'var(--bg-elevated)' : 'transparent',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  boxShadow: tab === 'upload' ? 'var(--shadow-sm)' : 'none',
+                  color: tab === 'upload' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s'
+                }}
+              >
+                ⚡ Upload PDF
+              </button>
             </div>
+
+            {tab === 'upload' ? (
+              <div
+                onDragEnter={handleDrag}
+                onDragOver={handleDrag}
+                onDragLeave={handleDrag}
+                onDrop={handleDrop}
+                style={{
+                  border: dragActive ? '2px dashed var(--accent)' : '2px dashed var(--border-default)',
+                  borderRadius: 'var(--radius-lg)',
+                  background: dragActive ? 'rgba(61,142,240,0.06)' : 'var(--bg-elevated)',
+                  padding: '32px 16px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  position: 'relative',
+                  marginBottom: 8
+                }}
+                onClick={() => document.getElementById('ats-file-input').click()}
+              >
+                <input
+                  id="ats-file-input"
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setFile(e.target.files[0]);
+                      setError('');
+                    }
+                  }}
+                  style={{ display: 'none' }}
+                />
+                
+                <div style={{ fontSize: 36, marginBottom: 12 }}>🧠</div>
+                
+                {file ? (
+                  <div>
+                    <p style={{ fontFamily: "'Geist'", fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', marginBottom: 2, wordBreak: 'break-all' }}>
+                      {file.name}
+                    </p>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--text-tertiary)' }}>
+                      {(file.size / 1024).toFixed(1)} KB · Ready to scan with Mistral AI
+                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                      style={{
+                        marginTop: 10,
+                        fontFamily: "'Geist'",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: 'var(--red)',
+                        background: 'var(--red-muted)',
+                        border: '1px solid rgba(248,113,113,.15)',
+                        borderRadius: 6,
+                        padding: '4px 10px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Change file
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p style={{ fontFamily: "'Geist'", fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', marginBottom: 4 }}>
+                      Drag & drop your resume PDF
+                    </p>
+                    <p style={{ fontFamily: "'Geist'", fontSize: 11.5, color: 'var(--text-tertiary)', marginBottom: 12 }}>
+                      or click to upload from computer
+                    </p>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'var(--bg-base)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 6,
+                      padding: '5px 12px',
+                      fontFamily: "'Geist'",
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)'
+                    }}>
+                      Choose PDF file
+                    </div>
+                    <p style={{ fontFamily: "'Geist'", fontSize: 10, color: 'var(--text-tertiary)', marginTop: 10 }}>
+                      PDF only · max 5MB
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <textarea
+                  value={resumeText}
+                  onChange={e => { setResumeText(e.target.value); setCharCount(e.target.value.length); setError(''); }}
+                  className="input"
+                  style={{ resize: 'vertical', minHeight: 220, fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.6 }}
+                  placeholder={`Paste your full resume text here...\n\nTip: Open your PDF, select all (Ctrl+A), copy, and paste here.\n\nExample:\nJohn Doe\njohn@email.com\n\nSKILLS\nReact, Node.js, Python, MongoDB, Docker`}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: charCount < 50 ? 'var(--red)' : 'var(--text-tertiary)' }}>
+                    {charCount} chars {charCount < 50 ? `(need ${50 - charCount} more)` : ''}
+                  </span>
+                  {charCount > 0 && (
+                    <button onClick={() => { setResumeText(''); setCharCount(0); }} style={{ fontFamily: "'Geist'", fontSize: 11, color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                      Clear ×
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Target role selector */}
@@ -194,7 +383,7 @@ export default function ATSChecker() {
             </div>
           )}
 
-          <button onClick={handleAnalyze} disabled={loading || charCount < 50} className="btn btn-primary btn-lg" style={{ justifyContent: 'center' }}>
+          <button onClick={handleAnalyze} disabled={loading || (tab === 'paste' ? charCount < 50 : !file)} className="btn btn-primary btn-lg" style={{ justifyContent: 'center' }}>
             {loading
               ? <><span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', animation: 'spin .7s linear infinite', display: 'inline-block' }}/> Analyzing...</>
               : result ? '↻ Re-analyze' : '🔍 Check ATS Score'}
@@ -221,7 +410,7 @@ export default function ATSChecker() {
           {!result && !loading && (
             <div className="card" style={{ minHeight: 480, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', border: '1px dashed var(--border-default)' }}>
               <div style={{ fontSize: 52, marginBottom: 'var(--space-5)' }}>📄</div>
-              <p style={{ fontFamily: "'Geist'", fontWeight: 600, fontSize: 15, color: 'var(--text-secondary)', marginBottom: 8 }}>Paste your resume to get started</p>
+              <p style={{ fontFamily: "'Geist'", fontWeight: 600, fontSize: 15, color: 'var(--text-secondary)', marginBottom: 8 }}>Upload or paste your resume to get started</p>
               <p style={{ fontFamily: "'Geist'", fontSize: 13, color: 'var(--text-tertiary)', maxWidth: 300, lineHeight: 1.6 }}>
                 Your ATS score, section checklist, keyword gaps, and improvement tips will appear here.
               </p>

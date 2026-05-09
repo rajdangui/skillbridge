@@ -1,4 +1,6 @@
 const axios = require('axios');
+const fs = require('fs');
+const pdf = require('pdf-parse');
 const User = require('../models/User');
 const Opportunity = require('../models/Opportunity');
 
@@ -117,7 +119,7 @@ async function getAISuggestions(resumeText, opportunity, scoreData) {
   const prompt = `You are an ATS (Applicant Tracking System) expert and senior recruiter reviewing a student resume.
 
 RESUME TEXT:
-${resumeText.slice(0, 2000)}
+${resumeText.slice(0, 3000)}
 
 TARGET ROLE: ${opportunity?.title || 'General'} at ${opportunity?.company || 'a tech company'}
 REQUIRED SKILLS: ${(opportunity?.requiredSkills || []).join(', ') || 'Not specified'}
@@ -131,30 +133,79 @@ Provide exactly 5 specific, actionable improvement suggestions. Be concrete — 
 Format: Return a JSON array of 5 strings. Each string is one suggestion. No markdown, no preamble.
 Example: ["Rewrite your summary to mention React and Node.js", "Add bullet: 'Reduced API latency by 35% using Redis caching'"]`;
 
-  if (process.env.GEMINI_API_KEY) {
-    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 600, responseMimeType: 'application/json' }
-    }, {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 60000
-    });
+  // 1. Prioritize Mistral AI if configured
+  if (process.env.MISTRAL_API_KEY) {
     try {
+      const response = await axios.post('https://api.mistral.ai/v1/chat/completions', {
+        model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
+        messages: [
+          { role: 'system', content: 'You are an expert resume reviewer and ATS checker. You respond with raw JSON matching the requested schema and absolutely nothing else.' },
+          { role: 'user', content: prompt }
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: 800,
+        temperature: 0.2
+      }, {
+        headers: {
+          'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 45000
+      });
+
+      const content = response.data.choices?.[0]?.message?.content?.trim();
+      if (content) {
+        const cleaned = content.replace(/```json|```/g, '').trim();
+        return JSON.parse(cleaned);
+      }
+    } catch (mistralErr) {
+      console.error('Mistral AI suggestion error:', mistralErr.response?.data || mistralErr.message);
+    }
+  }
+
+  // 2. Fall back to Gemini
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 600, responseMimeType: 'application/json' }
+      }, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 45000
+      });
       const text = response.data.candidates[0]?.content?.parts[0]?.text.trim() || '';
       const cleaned = text.replace(/```json|```/g, '').trim();
       return JSON.parse(cleaned);
-    } catch { return null; }
+    } catch (geminiErr) {
+      console.error('Gemini AI suggestion error:', geminiErr.message);
+    }
   }
+
   return null;
 }
 
 // ── MAIN CONTROLLER ──────────────────────────────────────────────────────────
 exports.analyzeResume = async (req, res) => {
   try {
-    const { resumeText, opportunityId } = req.body;
+    let { resumeText, opportunityId } = req.body || {};
+
+    // Support file uploads (PDF)
+    if (req.file) {
+      try {
+        const dataBuffer = fs.readFileSync(req.file.path);
+        const parsedPdf = await pdf(dataBuffer);
+        resumeText = parsedPdf.text || '';
+      } catch (parseErr) {
+        console.error('ATS PDF parse error:', parseErr);
+        return res.status(400).json({ message: 'Failed to extract text from PDF resume.' });
+      } finally {
+        // Always clean up temporary uploaded local file
+        try { fs.unlinkSync(req.file.path); } catch (_) {}
+      }
+    }
 
     if (!resumeText || resumeText.trim().length < 50) {
-      return res.status(400).json({ message: 'Resume text is required (min 50 characters)' });
+      return res.status(400).json({ message: 'Resume text is required or file was unreadable (min 50 characters)' });
     }
 
     const student = await User.findById(req.user._id).select('name skills resume');
@@ -167,7 +218,7 @@ exports.analyzeResume = async (req, res) => {
     // Run algorithmic scoring (always available, no API key needed)
     const scoreData = scoreResumeText(resumeText, opportunity);
 
-    // Try to get AI suggestions (requires API key, gracefully falls back)
+    // Try to get AI suggestions (gracefully falls back)
     let aiSuggestions = null;
     try {
       aiSuggestions = await getAISuggestions(resumeText, opportunity, scoreData);
@@ -177,11 +228,12 @@ exports.analyzeResume = async (req, res) => {
 
     res.json({
       ...scoreData,
+      resumeText, // Return parsed text so UI can sync
       aiSuggestions,
       hasAI: !!aiSuggestions,
-      studentName: student.name,
+      studentName: student?.name || 'Student',
       targetRole: opportunity ? `${opportunity.title} at ${opportunity.company}` : 'General ATS Check',
-      hasResume: !!student.resume,
+      hasResume: student ? !!student.resume : false,
     });
 
   } catch (err) {

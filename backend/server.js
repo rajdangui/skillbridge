@@ -36,6 +36,16 @@ const adminRoutes        = require('./routes/adminRoutes');
 // ── Connect DB ────────────────────────────────────────────────────
 connectDB();
 
+// Auto-verify all legacy users to globally remove email verification restrictions
+const User = require('./models/User');
+User.updateMany({ isEmailVerified: false }, { isEmailVerified: true })
+  .then(res => {
+    if (res.modifiedCount > 0) {
+      console.log(`\n[Migration] Auto-verified ${res.modifiedCount} legacy users.`);
+    }
+  })
+  .catch(err => console.error('Auto-verification migration error:', err));
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
