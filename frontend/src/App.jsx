@@ -33,10 +33,69 @@ const Spinner = () => (
   </div>
 );
 
+const FullScreenLoader = () => (
+  <div style={{
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(13, 15, 18, 0.8)',
+    backdropFilter: 'blur(8px)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    animation: 'fade-in 0.2s ease-out'
+  }}>
+    <style>{`
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+      @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    `}</style>
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+      <div style={{
+        width: 54,
+        height: 54,
+        borderRadius: '50%',
+        border: '3px solid transparent',
+        borderTopColor: 'var(--accent)',
+        borderBottomColor: 'var(--accent)',
+        animation: 'spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite'
+      }}/>
+      <div style={{
+        position: 'absolute',
+        width: 36,
+        height: 36,
+        borderRadius: '50%',
+        border: '3px solid transparent',
+        borderLeftColor: 'var(--text-accent)',
+        borderRightColor: 'var(--text-accent)',
+        animation: 'spin 0.7s linear infinite reverse'
+      }}/>
+    </div>
+    <p style={{
+      fontFamily: "'Geist', sans-serif",
+      fontSize: 14,
+      fontWeight: 500,
+      color: 'var(--text-primary)',
+      letterSpacing: '-0.01em',
+      animation: 'pulse 1.5s ease-in-out infinite',
+      margin: 0
+    }}>
+      Securing session...
+    </p>
+  </div>
+);
+
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <Spinner/>;
   return user ? children : <Navigate to="/login" replace/>;
+}
+
+function PublicRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <Spinner/>;
+  return user ? <Navigate to="/dashboard" replace/> : children;
 }
 
 function AdminRoute({ children }) {
@@ -53,7 +112,7 @@ function StudentRoute({ children }) {
 }
 
 function AppContent() {
-  const { loading } = useAuth();
+  const { loading, transitioning } = useAuth();
   if (loading) return (
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--bg-base)' }}>
       <Spinner/>
@@ -61,13 +120,15 @@ function AppContent() {
   );
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg-base)' }}>
+      {transitioning && <FullScreenLoader/>}
       <Navbar/>
       <EmailVerificationBanner/>
       <Routes>
         {/* Public */}
         <Route path="/"                         element={<Landing/>}/>
-        <Route path="/login"                    element={<AuthPage mode="login"/>}/>
-        <Route path="/register"                 element={<AuthPage mode="register"/>}/>
+        <Route path="/login"                    element={<PublicRoute><AuthPage mode="login"/></PublicRoute>}/>
+        <Route path="/register"                 element={<PublicRoute><AuthPage mode="register"/></PublicRoute>}/>
+
         <Route path="/verify-email"             element={<VerifyEmail/>}/>
         <Route path="/forgot-password"          element={<ForgotPassword/>}/>
         <Route path="/reset-password"           element={<ResetPassword/>}/>

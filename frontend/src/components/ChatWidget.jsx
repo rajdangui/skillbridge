@@ -102,10 +102,6 @@ export default function ChatWidget() {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
-  // Only show for logged-in students/admins, hide on auth pages
-  if (!user || user.role === 'company') return null;
-  if (HIDE_ON.some(p => location.pathname.startsWith(p))) return null;
-
   // Scroll to bottom whenever messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior:'smooth' });
@@ -187,6 +183,10 @@ export default function ChatWidget() {
   const widgetStyle = isMobile
     ? { left:0, right:0, bottom:0, width:'100%', height:'70vh', borderRadius:'20px 20px 0 0' }
     : { right:24, bottom:24, width:380, height:580, borderRadius:'var(--radius-2xl)' };
+
+  // Only show for logged-in students/admins, hide on auth pages
+  if (!user || user.role === 'company') return null;
+  if (HIDE_ON.some(p => location.pathname.startsWith(p))) return null;
 
   return (
     <>

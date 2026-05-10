@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [transitioning, setTransitioning] = useState(false);
 
   useEffect(() => {
     authAPI.getMe()
@@ -15,26 +16,43 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (credentials) => {
-    const res = await authAPI.login(credentials);
-    setUser(res.data.user);
-    return res.data.user;
+    setTransitioning(true);
+    try {
+      const res = await authAPI.login(credentials);
+      setUser(res.data.user);
+      return res.data.user;
+    } finally {
+      setTransitioning(false);
+    }
   };
 
   const register = async (data) => {
-    const res = await authAPI.register(data);
-    setUser(res.data.user);
-    return res.data.user;
+    setTransitioning(true);
+    try {
+      const res = await authAPI.register(data);
+      setUser(res.data.user);
+      return res.data.user;
+    } finally {
+      setTransitioning(false);
+    }
   };
 
   const logout = async () => {
-    await authAPI.logout();
-    setUser(null);
+    setTransitioning(true);
+    try {
+      await authAPI.logout();
+    } catch (err) {
+      console.warn('Backend session logout failed, clearing local session:', err.message);
+    } finally {
+      setUser(null);
+      setTransitioning(false);
+    }
   };
 
   const updateUser = (updatedUser) => setUser(prev => ({ ...prev, ...updatedUser }));
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, transitioning, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
@@ -45,3 +63,4 @@ export const useAuth = () => {
   if (!ctx) throw new Error('useAuth must be inside AuthProvider');
   return ctx;
 };
+
